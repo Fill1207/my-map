@@ -49,6 +49,7 @@ a{color:inherit}
 .lock-form input{padding:14px 16px;border:1.5px solid var(--line);border-radius:var(--r-btn);
   background:var(--card);font-size:16px;text-align:center;outline:none;transition:border-color .15s}
 .lock-form input:focus{border-color:var(--accent)}
+#pwInput{-webkit-text-security:disc} /* 한글 입력 가능한 text 필드를 ●로 가림 */
 .lock-form button{padding:14px 0;border-radius:var(--r-btn);background:var(--accent);color:#fff;
   font-weight:700;font-size:16px;transition:transform .1s, opacity .15s}
 .lock-form button:active{transform:scale(.98)}
@@ -210,7 +211,9 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
     <p>우리끼리 보는 지도예요.<br>전달받은 비밀번호를 입력해 주세요.</p>
     <div class="booting" id="bootSpin" hidden><div class="spinner"></div>지도 여는 중</div>
     <form class="lock-form" id="lockForm">
-      <input id="pwInput" type="password" placeholder="비밀번호" autocomplete="current-password" enterkeyhint="go">
+      <!-- type=password는 폰에서 한글 키보드를 막아서, 한글이 되는 text + CSS 가림 처리 사용 -->
+      <input id="pwInput" type="text" placeholder="비밀번호 (한글)" autocomplete="off"
+        autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
       <button id="pwBtn" type="submit">열기</button>
     </form>
     <div class="lock-err" id="lockErr"></div>
@@ -330,7 +333,8 @@ const store = {
 };
 
 async function deriveKey(pw){
-  const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  // NFC 정규화: 기기·자판마다 한글 조합 방식이 달라도 같은 비밀번호로 인식
+  const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw.normalize("NFC")), "PBKDF2", false, ["deriveKey"]);
   const key = await crypto.subtle.deriveKey(
     {name:"PBKDF2", salt:b64(PLACES_ENC.salt), iterations:PLACES_ENC.it||200000, hash:"SHA-256"},
     km, {name:"AES-GCM", length:256}, true, ["decrypt"]);
@@ -392,7 +396,7 @@ function showLockError(err){
 
 $("#lockForm").addEventListener("submit", async e=>{
   e.preventDefault();
-  const pw = $("#pwInput").value;
+  const pw = $("#pwInput").value.trim(); // 앞뒤 공백 실수 보정
   if(!pw) return;
   $("#pwBtn").disabled = true;
   $("#lockErr").textContent = "";
