@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>나만의 지도</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+/* ============================================================
+   디자인 토큰 — 모서리 규칙: 카드 20px / 버튼·입력 12px / 칩 pill
+   포인트 색은 파랑(--accent) 하나만 사용. 카테고리 색은 의미 구분용.
+   ============================================================ */
+:root{
+  --bg:#f2f4f6; --card:#ffffff; --ink:#191f28; --sub:#6b7684; --line:#e5e8eb;
+  --accent:#3182f6; --accent-soft:#e8f1fe;
+  --map:#e2e7ed; --map-line:#cbd3dc; --map-on:#cfe2fb; --map-label:#333d4b;
+  --kakao:#fee500; --kakao-ink:#191600;
+  --danger:#e5503c;
+  --shadow:0 1px 4px rgba(25,31,40,.06), 0 4px 16px rgba(25,31,40,.05);
+  --r-card:20px; --r-btn:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101014; --card:#1b1c21; --ink:#e9ecf0; --sub:#8b93a1; --line:#2b2d34;
+    --accent:#5a9bf8; --accent-soft:#1c2c44;
+    --map:#22242b; --map-line:#3a3d46; --map-on:#1f3a5f; --map-label:#c6ccd6;
+    --shadow:0 1px 4px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
+  }
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);min-height:100dvh;
+  font-family:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  line-height:1.55;font-size:15px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font:inherit;color:var(--ink)}
+a{color:inherit}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 72px}
+
+/* ---------- 잠금 화면 ---------- */
+#lock{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px}
+.lock-card{width:100%;max-width:360px;text-align:center}
+.lock-emblem{width:76px;height:76px;border-radius:24px;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 20px;
+  box-shadow:0 8px 24px rgba(49,130,246,.35)}
+.lock-card h1{font-size:22px;letter-spacing:-.5px;margin-bottom:6px}
+.lock-card p{font-size:14px;color:var(--sub);margin-bottom:24px}
+.lock-form{display:flex;flex-direction:column;gap:10px}
+.lock-form input{padding:14px 16px;border:1.5px solid var(--line);border-radius:var(--r-btn);
+  background:var(--card);font-size:16px;text-align:center;outline:none;transition:border-color .15s}
+.lock-form input:focus{border-color:var(--accent)}
+.lock-form button{padding:14px 0;border-radius:var(--r-btn);background:var(--accent);color:#fff;
+  font-weight:700;font-size:16px;transition:transform .1s, opacity .15s}
+.lock-form button:active{transform:scale(.98)}
+.lock-form button:disabled{opacity:.5}
+.lock-err{font-size:13px;color:var(--danger);min-height:20px;margin-top:8px}
+.lock-hint{font-size:12px;color:var(--sub);margin-top:16px}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-5px)}}
+
+/* ---------- 헤더 ---------- */
+header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.head-in{max-width:680px;margin:0 auto;padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px}
+.title-row{display:flex;align-items:center;gap:8px}
+.brand{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:16px}
+.brand b{font-size:17px;letter-spacing:-.4px}
+.count-pill{font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);
+  border-radius:99px;padding:3px 10px}
+.suggest-btn{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:700;
+  background:var(--card);border:1.5px solid var(--line);border-radius:99px;padding:7px 14px;transition:transform .1s}
+.suggest-btn:active{transform:scale(.97)}
+.search{width:100%;padding:11px 16px;border:1.5px solid var(--line);border-radius:var(--r-btn);
+  background:var(--card);font-size:15px;outline:none;transition:border-color .15s}
+.search:focus{border-color:var(--accent)}
+.search::placeholder{color:var(--sub)}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:99px;
+  border:1.5px solid var(--line);background:var(--card);font-size:13.5px;font-weight:600;color:var(--sub);
+  transition:all .15s}
+.chip small{font-weight:500;opacity:.7;font-size:12px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.on small{opacity:.8}
+
+/* ---------- 지도 홈 ---------- */
+.map-card{background:var(--card);border-radius:var(--r-card);box-shadow:var(--shadow);
+  margin-top:16px;padding:20px 12px 8px}
+svg.korea{width:100%;height:auto;display:block;max-height:70dvh}
+.region path{fill:var(--map);stroke:var(--map-line);stroke-width:1;transition:fill .15s}
+.region{cursor:pointer}
+@media(hover:hover){.region:hover path{fill:var(--map-on)}}
+.region:active path{fill:var(--map-on)}
+.region.has path{fill:var(--map-on)}
+.rlabel{font-size:25px;font-weight:700;fill:var(--map-label);text-anchor:middle;pointer-events:none;
+  paint-order:stroke;stroke:var(--card);stroke-width:5px;stroke-linejoin:round}
+.rbadge{pointer-events:none}
+.rbadge rect{fill:var(--accent)}
+.rbadge text{fill:#fff;font-size:19px;font-weight:700;text-anchor:middle}
+.map-hint{text-align:center;font-size:13px;color:var(--sub);padding:10px 0 12px}
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin-top:14px}
+.sumcard{background:var(--card);border-radius:var(--r-card);padding:14px 8px 12px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:transform .1s}
+.sumcard:active{transform:scale(.97)}
+.sumcard .ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:19px;margin-bottom:4px}
+.sumcard b{font-size:18px;letter-spacing:-.3px}
+.sumcard span{font-size:12px;color:var(--sub)}
+
+/* ---------- 지역 화면 ---------- */
+.crumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:18px 2px 4px;font-size:15px;font-weight:700;letter-spacing:-.3px}
+.crumb button{color:var(--accent);font-weight:700;padding:2px}
+.crumb .sep{color:var(--sub);font-weight:400}
+.crumb .note{font-size:12px;color:var(--sub);font-weight:500}
+.subchips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 2px}
+.subchip{padding:6px 13px;border-radius:99px;border:1.5px solid var(--line);
+  background:var(--card);font-size:13px;font-weight:600;color:var(--sub);transition:all .15s}
+.subchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* ---------- 장소 카드 ---------- */
+.groups h3{margin:24px 2px 0;font-size:16px;letter-spacing:-.3px}
+.groups h4{margin:14px 2px 0;font-size:13px;color:var(--sub);font-weight:600}
+.card{background:var(--card);border-radius:var(--r-card);box-shadow:var(--shadow);overflow:hidden;margin-top:12px;
+  animation:rise .35s ease both}
+#main.noanim .card{animation:none}
+.cdate{margin-top:10px;font-size:11px;color:var(--sub);text-align:right}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.card{animation:none}.shake{animation:none}}
+.photo{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--map)}
+.ph-placeholder{width:100%;aspect-ratio:16/7;display:flex;align-items:center;justify-content:center;font-size:40px}
+.ph-date{background:linear-gradient(135deg,#f0a5bd,#d4577f)}
+.ph-trip{background:linear-gradient(135deg,#8fd0a8,#3a9463)}
+.ph-food{background:linear-gradient(135deg,#f2b183,#d96f33)}
+.ph-cafe{background:linear-gradient(135deg,#c2a184,#8a6444)}
+.ph-fish{background:linear-gradient(135deg,#8db9e8,#3573bd)}
+.ph-church{background:linear-gradient(135deg,#b6a2dd,#7457b3)}
+.cbody{padding:16px 18px 18px}
+.cat-tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:7px;padding:2.5px 9px;margin-bottom:8px;color:#fff}
+.t-date{background:#d4577f}.t-trip{background:#3a9463}.t-food{background:#d96f33}
+.t-cafe{background:#8a6444}.t-fish{background:#3573bd}.t-church{background:#7457b3}
+/* 홈 화면 카테고리 아이콘 배경 — 위 .t-* 색의 13% 투명 버전 (색 바꿀 땐 두 줄 함께) */
+.ic-date{background:#d4577f22}.ic-trip{background:#3a946322}.ic-food{background:#d96f3322}
+.ic-cafe{background:#8a644422}.ic-fish{background:#3573bd22}.ic-church{background:#7457b322}
+.cname{font-size:18px;font-weight:700;letter-spacing:-.4px}
+.chier{font-size:12.5px;color:var(--sub);margin-top:3px}
+.caddr{display:flex;align-items:flex-start;gap:6px;font-size:13.5px;color:var(--sub);margin-top:10px}
+.cmenu{margin-top:12px;background:var(--bg);border-radius:var(--r-btn);padding:11px 14px;font-size:14px}
+.cmenu .row{display:flex;justify-content:space-between;gap:12px;padding:2.5px 0}
+.cmenu .row b{font-weight:600}
+.cmenu .row span{color:var(--sub);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.cnotes{margin-top:10px;font-size:13.5px;line-height:1.6;color:var(--sub);padding:0 2px}
+.cnotes b{color:var(--ink);font-weight:600}
+.cbtns{display:flex;gap:8px;margin-top:14px}
+.cbtns a,.cbtns button{flex:1;text-align:center;text-decoration:none;font-size:14px;font-weight:700;
+  padding:11px 0;border-radius:var(--r-btn);transition:transform .1s}
+.cbtns a:active,.cbtns button:active{transform:scale(.98)}
+.cbtns .go-kakao{background:var(--kakao);color:var(--kakao-ink)}
+.cbtns .copy-addr{flex:0 0 auto;padding:11px 16px;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.empty{text-align:center;color:var(--sub);padding:56px 0;font-size:14.5px;line-height:1.7}
+.empty .big{font-size:40px;display:block;margin-bottom:10px}
+footer{margin-top:40px;text-align:center;font-size:12px;color:var(--sub);display:flex;flex-direction:column;gap:8px}
+footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- 모달 공통 ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(10,12,16,.5);z-index:50;display:flex;
+  align-items:flex-end;justify-content:center}
+@media(min-width:600px){.modal-bg{align-items:center}}
+.modal{background:var(--card);border-radius:var(--r-card) var(--r-card) 0 0;max-width:520px;width:100%;
+  max-height:88dvh;overflow-y:auto;padding:24px 22px calc(24px + env(safe-area-inset-bottom))}
+@media(min-width:600px){.modal{border-radius:var(--r-card)}}
+.modal h2{font-size:18px;letter-spacing:-.4px;margin-bottom:4px}
+.modal .desc{font-size:13.5px;color:var(--sub);margin-bottom:18px;line-height:1.6}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:13px;font-weight:600}
+.field label small{color:var(--sub);font-weight:500}
+.field input,.field select,.field textarea{padding:11px 14px;border:1.5px solid var(--line);
+  border-radius:var(--r-btn);background:var(--bg);font-size:15px;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:64px}
+.modal-btns{display:flex;gap:8px;margin-top:6px}
+.modal-btns button{flex:1;padding:13px 0;border-radius:var(--r-btn);font-weight:700;font-size:15px;transition:transform .1s}
+.modal-btns button:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-ghost{background:var(--bg);border:1px solid var(--line)}
+.modal .fineprint{font-size:12px;color:var(--sub);margin-top:14px;line-height:1.6}
+.modal .close-x{position:sticky;float:right;top:0;font-size:20px;color:var(--sub);padding:2px 6px}
+
+/* ---------- 토스트 ---------- */
+#toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;border-radius:99px;
+  padding:11px 22px;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:90;
+  max-width:88vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- 로딩 ---------- */
+.booting{display:flex;flex-direction:column;align-items:center;gap:14px;padding:80px 0;color:var(--sub);font-size:14px}
+.spinner{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);
+  animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- 잠금 화면 -->
+<div id="lock">
+  <div class="lock-card">
+    <div class="lock-emblem">📍</div>
+    <h1>나만의 지도</h1>
+    <p>우리끼리 보는 지도예요.<br>전달받은 비밀번호를 입력해 주세요.</p>
+    <div class="booting" id="bootSpin" hidden><div class="spinner"></div>지도 여는 중</div>
+    <form class="lock-form" id="lockForm">
+      <input id="pwInput" type="password" placeholder="비밀번호" autocomplete="current-password" enterkeyhint="go">
+      <button id="pwBtn" type="submit">열기</button>
+    </form>
+    <div class="lock-err" id="lockErr"></div>
+    <div class="lock-hint">한 번 열면 이 기기에서는 계속 열려 있어요</div>
+  </div>
+</div>
+
+<!-- 앱 본체 -->
+<div id="app" hidden>
+  <header>
+    <div class="head-in">
+      <div class="title-row">
+        <div class="brand" onclick="goHome()">
+          <span class="mark">📍</span><b>나만의 지도</b>
+        </div>
+        <span class="count-pill" id="totalPill"></span>
+        <button class="suggest-btn" onclick="openSuggest()">✉️ 장소 제안</button>
+      </div>
+      <input class="search" id="q" type="search" placeholder="이름, 지역, 메뉴로 검색" oninput="onSearch()">
+      <div class="chips" id="chips"></div>
+    </div>
+  </header>
+  <div class="wrap">
+    <main id="main"></main>
+    <footer id="foot"></footer>
+  </div>
+</div>
+
+<!-- 장소 제안 모달 -->
+<div class="modal-bg" id="suggestBg" style="display:none" onclick="if(event.target===this)closeSuggest()">
+  <div class="modal">
+    <button class="close-x" onclick="closeSuggest()" aria-label="닫기">✕</button>
+    <h2>✉️ 장소 제안하기</h2>
+    <p class="desc">추천하고 싶은 곳을 알려주세요. 관리자가 확인하면 지도에 올라갑니다.
+    등록과 삭제는 관리자만 할 수 있어요.</p>
+    <div class="field">
+      <label>카카오맵 링크 <small>(카카오맵에서 장소 → 공유 → 링크 복사)</small></label>
+      <input id="sgLink" type="url" placeholder="https://kko.to/..." inputmode="url">
+    </div>
+    <div class="field">
+      <label>장소 이름 <small>(선택)</small></label>
+      <input id="sgName" type="text" placeholder="예: 만월">
+    </div>
+    <div class="field">
+      <label>카테고리</label>
+      <select id="sgCat"></select>
+    </div>
+    <div class="field">
+      <label>한마디 <small>(선택 · 추천 이유, 꿀팁)</small></label>
+      <textarea id="sgMemo" placeholder="예: 주차 어렵지만 짬뽕이 인생임"></textarea>
+    </div>
+    <div class="field">
+      <label>보내는 사람 <small>(선택)</small></label>
+      <input id="sgFrom" type="text" placeholder="이름 또는 별명">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="sendSuggest('copy')">내용 복사</button>
+      <button class="btn-primary" onclick="sendSuggest('share')">카톡 등으로 공유</button>
+    </div>
+    <p class="fineprint">공유 버튼을 누르면 카카오톡 같은 앱으로 관리자에게 바로 보낼 수 있어요.
+    복사했다면 관리자에게 붙여넣어 보내주세요.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="koreamap.js"></script>
+<script src="places.enc.js"></script>
+<script>
+/* ===== 설정 ===== */
+const CATS = [
+  {id:"데이트",     emoji:"💕", cls:"date"},
+  {id:"여행지",     emoji:"🏞️", cls:"trip"},
+  {id:"맛집",       emoji:"🍜", cls:"food"},
+  {id:"카페",       emoji:"☕", cls:"cafe"},
+  {id:"낚시포인트", emoji:"🎣", cls:"fish"},
+  {id:"교회",       emoji:"⛪", cls:"church"},
+];
+const CAT_BY_ID = Object.fromEntries(CATS.map(c=>[c.id,c]));
+
+/* 8도 + 제주. 광역시는 가까운 도 그룹에 포함 */
+const REGIONS = [
+  {name:"경기도",   short:"경기", codes:["31","11","23"], label:[299,154], note:"서울·인천 포함"},
+  {name:"강원도",   short:"강원", codes:["32"],           label:[449,136]},
+  {name:"충청북도", short:"충북", codes:["33"],           label:[392,282]},
+  {name:"충청남도", short:"충남", codes:["34","25","29"], label:[258,308], note:"대전·세종 포함"},
+  {name:"전라북도", short:"전북", codes:["35"],           label:[299,432]},
+  {name:"전라남도", short:"전남", codes:["36","24"],      label:[277,545], note:"광주 포함"},
+  {name:"경상북도", short:"경북", codes:["37","22"],      label:[487,332], note:"대구 포함"},
+  {name:"경상남도", short:"경남", codes:["38","21","26"], label:[447,483], note:"부산·울산 포함"},
+  {name:"제주도",   short:"제주", codes:["39"],           label:[236,760]},
+];
+
+/* ===== 상태 ===== */
+let PLACES = [];
+let S = {view:"home", region:null, si:null, gu:null, cat:null, q:""};
+
+/* ===== 도우미 ===== */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const norm = s=>String(s??"").toLowerCase().replace(/\s+/g,"");
+const b64 = s=>Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+/* ===== 잠금 해제 (복호화) ===== */
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} },
+};
+
+async function deriveKey(pw){
+  const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    {name:"PBKDF2", salt:b64(PLACES_ENC.salt), iterations:PLACES_ENC.it||200000, hash:"SHA-256"},
+    km, {name:"AES-GCM", length:256}, true, ["decrypt"]);
+  try{ // 매번 20만회 키 유도를 반복하지 않도록 유도된 키를 캐시 (salt가 같은 동안만 유효)
+    const raw = await crypto.subtle.exportKey("raw", key);
+    store.set("hm_k", btoa(String.fromCharCode(...new Uint8Array(raw))));
+    store.set("hm_salt", PLACES_ENC.salt);
+  }catch(e){}
+  return key;
+}
+
+async function decryptWith(key){
+  const plain = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64(PLACES_ENC.iv)}, key, b64(PLACES_ENC.data));
+  const stream = new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+
+async function decryptPlaces(pw){
+  const cachedRaw = store.get("hm_k");
+  if(cachedRaw && store.get("hm_salt") === PLACES_ENC.salt){
+    try{
+      const key = await crypto.subtle.importKey("raw", b64(cachedRaw), "AES-GCM", false, ["decrypt"]);
+      return await decryptWith(key);
+    }catch(e){ store.del("hm_k"); store.del("hm_salt"); }
+  }
+  return decryptWith(await deriveKey(pw)); // 비밀번호가 틀리면 OperationError
+}
+
+/* 실패 원인을 구분해 안내 — 전부 '비밀번호 오류'로 뭉뚱그리지 않음 */
+function failReason(err){
+  if(typeof PLACES_ENC === "undefined")
+    return {msg:"데이터 파일을 불러오지 못했어요. 인터넷을 확인하고 새로고침해 주세요.", wrongPw:false};
+  if(!(window.crypto && crypto.subtle))
+    return {msg:"보안 연결(https)에서만 열 수 있어요.", wrongPw:false};
+  if(typeof DecompressionStream === "undefined")
+    return {msg:"브라우저 버전이 낮아요. 폰/브라우저를 업데이트해 주세요.", wrongPw:false};
+  if(err && err.name === "OperationError")
+    return {msg:"비밀번호가 맞지 않아요", wrongPw:true};
+  return {msg:"여는 데 실패했어요. 새로고침 후 다시 시도해 주세요.", wrongPw:false};
+}
+
+async function unlock(pw){
+  PLACES = await decryptPlaces(pw);
+  store.set("hm_pw", pw);
+  $("#lock").style.display = "none";
+  $("#app").hidden = false;
+  render();
+}
+
+function showLockError(err){
+  const r = failReason(err);
+  $("#lockErr").textContent = r.msg;
+  if(r.wrongPw){
+    const card = document.querySelector(".lock-card");
+    card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+  }
+  return r;
+}
+
+$("#lockForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const pw = $("#pwInput").value;
+  if(!pw) return;
+  $("#pwBtn").disabled = true;
+  $("#lockErr").textContent = "";
+  try{ await unlock(pw); }
+  catch(err){ showLockError(err); }
+  $("#pwBtn").disabled = false;
+});
+
+(async function boot(){
+  const saved = store.get("hm_pw");
+  if(!saved) return;
+  $("#bootSpin").hidden = false;
+  $("#lockForm").style.display = "none";
+  try{ await unlock(saved); }
+  catch(err){
+    $("#bootSpin").hidden = true;
+    $("#lockForm").style.display = "";
+    const r = showLockError(err);
+    if(r.wrongPw) store.del("hm_pw"); // 진짜 비밀번호 문제일 때만 저장본 삭제
+  }
+})();
+
+function lockApp(){
+  store.del("hm_pw"); store.del("hm_k"); store.del("hm_salt");
+  location.reload();
+}
+
+/* ===== 데이터 필터 ===== */
+function filtered(){
+  let list = PLACES.slice();
+  if(S.cat) list = list.filter(p=>p.category===S.cat);
+  if(S.q){
+    const q = norm(S.q);
+    list = list.filter(p=>norm([p.name,p.do,p.si,p.gu,p.dong,p.address,p.notes,p.category,
+      ...(p.menu||[]).flat()].join(" ")).includes(q));
+  }
+  return list;
+}
+function kakaoUrl(p){
+  if(p.kakao) return p.kakao;
+  return "https://map.kakao.com/link/search/"+encodeURIComponent(`${p.si||""} ${p.gu||""} ${p.name}`.trim());
+}
+/* 카카오 CDN에 축소본(가로 400px)을 요청해 데이터 사용량을 줄임 — C·R 외 스펙은 403 */
+function slimPhoto(url){ return url.replace("/cthumb/local/C800x400.q50/", "/cthumb/local/R400x0.q50/"); }
+
+/* ===== 렌더 ===== */
+function render(noAnim){
+  $("#main").classList.toggle("noanim", !!noAnim); // 검색 중에는 카드 등장 애니메이션 생략
+  renderChips();
+  const list = filtered();
+  $("#totalPill").textContent = `${PLACES.length}곳`;
+  const m = $("#main");
+  if(S.q) m.innerHTML = viewList(list, `"${esc(S.q)}" 검색 결과 ${list.length}곳`);
+  else if(S.view==="region") m.innerHTML = viewRegion(list);
+  else m.innerHTML = viewHome(list);
+  $("#foot").innerHTML = `<span>총 ${PLACES.length}곳 기록됨 · 비밀번호를 아는 사람만 볼 수 있어요</span>
+    <span><button onclick="lockApp()">이 기기에서 잠그기</button></span>`;
+}
+
+function renderChips(){
+  const counts = {};
+  for(const p of PLACES) counts[p.category]=(counts[p.category]||0)+1;
+  let h = `<button class="chip ${!S.cat?"on":""}" onclick="setCat(null)">전체 <small>${PLACES.length}</small></button>`;
+  for(const c of CATS)
+    h += `<button class="chip ${S.cat===c.id?"on":""}" onclick="setCat('${c.id}')">${c.emoji} ${c.id} <small>${counts[c.id]||0}</small></button>`;
+  $("#chips").innerHTML = h;
+}
+
+function viewHome(list){
+  const byRegion = {};
+  for(const p of list) byRegion[p.do]=(byRegion[p.do]||0)+1;
+  let svg = `<svg class="korea" viewBox="${KOREA_MAP.viewBox}" xmlns="http://www.w3.org/2000/svg">`;
+  for(const r of REGIONS){
+    const n = byRegion[r.name]||0;
+    svg += `<g class="region ${n?"has":""}" onclick="goRegion('${r.name}')">`;
+    for(const code of r.codes) svg += `<path d="${KOREA_MAP.provinces[code].d}"/>`;
+    svg += `</g>`;
+  }
+  for(const r of REGIONS){
+    const n = byRegion[r.name]||0;
+    const [x,y] = r.label;
+    svg += `<text class="rlabel" x="${x}" y="${y}">${r.short}</text>`;
+    if(n){
+      const w = String(n).length*12+26;
+      svg += `<g class="rbadge"><rect x="${x+22}" y="${y-42}" width="${w}" height="30" rx="15"/>
+        <text x="${x+22+w/2}" y="${y-20}">${n}</text></g>`;
+    }
+  }
+  svg += `</svg>`;
+  let sums = `<div class="sumgrid">`;
+  for(const c of CATS){
+    const n = PLACES.filter(p=>p.category===c.id).length;
+    sums += `<div class="sumcard" onclick="setCat('${c.id}')">
+      <div class="ic ic-${c.cls}">${c.emoji}</div>
+      <b>${n}</b><span>${c.id}</span></div>`;
+  }
+  sums += `</div>`;
+  return `<div class="map-card">${svg}<div class="map-hint">지역을 누르면 그곳의 장소가 나와요${S.cat?` · 지금 <b>${esc(S.cat)}</b>만 보는 중`:""}</div></div>${sums}`;
+}
+
+function viewRegion(list){
+  const region = REGIONS.find(r=>r.name===S.region);
+  let inRegion = list.filter(p=>p.do===S.region);
+  const sis = [...new Set(inRegion.map(p=>p.si))].sort((a,b)=>a.localeCompare(b,"ko"));
+  if(S.si) inRegion = inRegion.filter(p=>p.si===S.si);
+  const gus = S.si ? [...new Set(inRegion.map(p=>p.gu).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ko")) : [];
+  if(S.gu) inRegion = inRegion.filter(p=>p.gu===S.gu);
+
+  let h = `<div class="crumb">
+    <button onclick="goHome()">전국</button><span class="sep">›</span>
+    ${S.si?`<button onclick="setSi(null)">${esc(S.region)}</button>`:`<span>${esc(S.region)}</span>`}
+    ${S.si?`<span class="sep">›</span>${S.gu?`<button onclick="setGu(null)">${esc(S.si)}</button>`:`<span>${esc(S.si)}</span>`}`:""}
+    ${S.gu?`<span class="sep">›</span><span>${esc(S.gu)}</span>`:""}
+    ${region?.note?`<span class="note">(${region.note})</span>`:""}
+  </div>`;
+
+  if(!S.si && sis.length>1){
+    h += `<div class="subchips">`+sis.map(si=>{
+      const n = list.filter(p=>p.do===S.region&&p.si===si).length;
+      return `<button class="subchip" data-si="${esc(si)}">${esc(si)} ${n}</button>`;
+    }).join("")+`</div>`;
+  }
+  if(S.si && gus.length>1 && !S.gu){
+    h += `<div class="subchips">`+gus.map(gu=>
+      `<button class="subchip" data-gu="${esc(gu)}">${esc(gu)}</button>`).join("")+`</div>`;
+  }
+  h += viewList(inRegion, null, true);
+  return h;
+}
+
+function viewList(list, heading, grouped){
+  if(!list.length) return (heading?`<div class="crumb"><span>${heading}</span></div>`:"")+
+    `<div class="empty"><span class="big">🗺️</span>아직 여기엔 기록된 장소가 없어요.<br>오른쪽 위 <b>장소 제안</b>으로 추천해 주세요!</div>`;
+  let h = heading?`<div class="crumb"><span>${heading}</span></div>`:"";
+  if(grouped){
+    const bySi = {};
+    for(const p of list) (bySi[p.si] = bySi[p.si]||[]).push(p);
+    h += `<div class="groups">`;
+    for(const si of Object.keys(bySi).sort((a,b)=>a.localeCompare(b,"ko"))){
+      h += `<h3>${esc(si)}</h3>`;
+      const byGu = {};
+      for(const p of bySi[si]) (byGu[p.gu||""] = byGu[p.gu||""]||[]).push(p);
+      const guKeys = Object.keys(byGu).sort((a,b)=>a.localeCompare(b,"ko"));
+      for(const gu of guKeys){
+        if(gu) h += `<h4>${esc(gu)}</h4>`;
+        h += byGu[gu].map(card).join("");
+      }
+    }
+    h += `</div>`;
+  }else h += list.map(card).join("");
+  return h;
+}
+
+function card(p){
+  const c = CAT_BY_ID[p.category]||{emoji:"📍",cls:"date"};
+  const photo = p.photo
+    ? `<img class="photo" src="${esc(slimPhoto(p.photo))}" alt="${esc(p.name)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph-placeholder ph-${c.cls}&quot;>${c.emoji}</div>'">`
+    : `<div class="ph-placeholder ph-${c.cls}">${c.emoji}</div>`;
+  const hier = [p.do,p.si,p.gu,p.dong].filter(Boolean).join(" · ");
+  const menu = (p.menu&&p.menu.length)
+    ? `<div class="cmenu">`+p.menu.map(([m,pr])=>`<div class="row"><b>${esc(m)}</b><span>${esc(pr)}</span></div>`).join("")+`</div>` : "";
+  const notes = p.notes?`<div class="cnotes"><b>알아두기</b> · ${esc(p.notes)}</div>`:"";
+  return `<div class="card">${photo}<div class="cbody">
+    <span class="cat-tag t-${c.cls}">${c.emoji} ${esc(p.category)}</span>
+    <div class="cname">${esc(p.name)}</div>
+    <div class="chier">${esc(hier)}</div>
+    <div class="caddr"><span>🧭</span><span>${esc(p.address)}</span></div>
+    ${menu}${notes}
+    <div class="cbtns">
+      <a class="go-kakao" href="${esc(kakaoUrl(p))}" target="_blank" rel="noopener">카카오맵에서 보기</a>
+      <button class="copy-addr" data-copy="${esc(p.address||p.name)}">주소 복사</button>
+    </div>
+    ${p.added?`<div class="cdate">등록 ${esc(p.added)}</div>`:""}
+  </div></div>`;
+}
+
+/* ===== 동작 ===== */
+function goHome(){S.view="home";S.region=S.si=S.gu=null;S.q="";$("#q").value="";render();scrollTo(0,0)}
+function goRegion(name){S.view="region";S.region=name;S.si=S.gu=null;S.q="";$("#q").value="";render();scrollTo(0,0)}
+function setSi(si){S.si=si;S.gu=null;render()}
+function setGu(gu){S.gu=gu;render()}
+function setCat(c){S.cat=(S.cat===c)?null:c;render()}
+let searchTm;
+function onSearch(){ // 한글 조합 중 잦은 재렌더를 막는 디바운스
+  clearTimeout(searchTm);
+  searchTm = setTimeout(()=>{ S.q = $("#q").value.trim(); render(true); }, 180);
+}
+
+/* 동적 값(시/구 이름, 주소)은 onclick 문자열 대신 data 속성 + 위임으로 처리
+   — 따옴표가 든 이름도 안전 */
+$("#main").addEventListener("click", e=>{
+  const t = e.target.closest("[data-si],[data-gu],[data-copy]");
+  if(!t) return;
+  if(t.dataset.copy !== undefined) copyText(t.dataset.copy, "주소를 복사했어요");
+  else if(t.dataset.si !== undefined) setSi(t.dataset.si);
+  else if(t.dataset.gu !== undefined) setGu(t.dataset.gu);
+});
+
+async function copyText(text, doneMsg){
+  try{
+    if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+    else{
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.cssText = "position:fixed;opacity:0";
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand("copy"); ta.remove();
+      if(!ok) throw new Error("execCommand failed");
+    }
+    toast(doneMsg||"복사했어요");
+    return true;
+  }catch(e){ toast("복사에 실패했어요. 길게 눌러 직접 복사해 주세요"); return false; }
+}
+
+/* ===== 장소 제안 ===== */
+function openSuggest(){
+  $("#sgCat").innerHTML = CATS.map(c=>`<option value="${c.id}">${c.emoji} ${c.id}</option>`).join("");
+  $("#suggestBg").style.display = "flex";
+}
+function closeSuggest(){ $("#suggestBg").style.display = "none"; }
+
+function suggestText(){
+  const link = $("#sgLink").value.trim();
+  const name = $("#sgName").value.trim();
+  const cat  = $("#sgCat").value;
+  const memo = $("#sgMemo").value.trim();
+  const from = $("#sgFrom").value.trim();
+  if(!link && !name){ toast("링크나 장소 이름 중 하나는 적어주세요"); return null; }
+  let t = "📍 나만의 지도에 장소 제안\n";
+  if(name) t += `장소: ${name}\n`;
+  if(link) t += `링크: ${link}\n`;
+  t += `카테고리: ${cat}\n`;
+  if(memo) t += `한마디: ${memo}\n`;
+  if(from) t += `보낸 사람: ${from}\n`;
+  return t;
+}
+
+async function sendSuggest(mode){
+  const text = suggestText();
+  if(!text) return;
+  if(mode==="share" && navigator.share){
+    try{ await navigator.share({text}); closeSuggest(); return; }
+    catch(e){ if(e.name==="AbortError") return; }
+  }
+  const ok = await copyText(text, "복사했어요! 관리자에게 카톡으로 보내주세요");
+  if(ok) closeSuggest();
+}
+</script>
+</body>
+</html>
