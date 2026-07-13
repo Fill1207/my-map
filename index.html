@@ -211,8 +211,8 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
     <p>우리끼리 보는 지도예요.<br>전달받은 비밀번호를 입력해 주세요.</p>
     <div class="booting" id="bootSpin" hidden><div class="spinner"></div>지도 여는 중</div>
     <form class="lock-form" id="lockForm">
-      <!-- type=password는 폰에서 한글 키보드를 막아서, 한글이 되는 text + CSS 가림 처리 사용 -->
-      <input id="pwInput" type="text" placeholder="비밀번호 (한글)" autocomplete="off"
+      <!-- 숫자 비밀번호: inputmode=numeric으로 폰에서 숫자 키패드가 바로 뜸 -->
+      <input id="pwInput" type="text" inputmode="numeric" placeholder="비밀번호 (숫자)" autocomplete="off"
         autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
       <button id="pwBtn" type="submit">열기</button>
     </form>
