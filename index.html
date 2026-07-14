@@ -436,6 +436,7 @@ function failReason(err){
 
 async function unlock(pw){
   PLACES = await decryptPlaces(pw);
+  qPendingCount = loadQueue().filter(x=>x.status==="pending").length; // 대기 건수 초기화
   store.set("hm_pw", pw);
   $("#lock").style.display = "none";
   $("#app").hidden = false;
@@ -493,12 +494,17 @@ function filtered(){
   }
   return list;
 }
+/* http(s) URL만 허용 — javascript: 등 위험한 스킴 차단 */
+function safeUrl(u){ return /^https?:\/\//i.test(u||"") ? u : ""; }
+/* 카카오맵 도메인만 허용 (등록 검증·표시용) */
+function isKakaoUrl(u){ return /^https?:\/\/([a-z]+\.)*(kakao\.com|kko\.to)\//i.test(u||""); }
+
 function kakaoUrl(p){
   if(p.kakao){
     // place.map.kakao.com/{id} 형태면 폰에서 앱으로 바로 열리는 딥링크로 변환
     const m = p.kakao.match(/place\.map\.kakao\.com\/(\d+)/);
     if(m) return "https://map.kakao.com/link/map/"+m[1];
-    return p.kakao; // kko.to 단축링크 등은 그대로 (자체적으로 앱을 엶)
+    if(safeUrl(p.kakao)) return p.kakao; // kko.to 단축링크 등은 그대로 (자체적으로 앱을 엶)
   }
   return "https://map.kakao.com/link/search/"+encodeURIComponent(`${p.si||""} ${p.gu||""} ${p.name}`.trim());
 }
@@ -515,7 +521,7 @@ function render(noAnim){
   if(S.q) m.innerHTML = viewList(list, `"${esc(S.q)}" 검색 결과 ${list.length}곳`);
   else if(S.view==="region") m.innerHTML = viewRegion(list);
   else m.innerHTML = viewHome(list);
-  const qN = loadQueue().filter(x=>x.status==="pending").length;
+  const qN = qPendingCount;
   $("#foot").innerHTML = `<span>총 ${PLACES.length}곳 기록됨 · 비밀번호를 아는 사람만 볼 수 있어요</span>
     <span><button onclick="openQueue()">🗂️ 승인 대기함${qN?` (${qN})`:""}</button> · <button onclick="lockApp()">이 기기에서 잠그기</button></span>`;
 }
@@ -707,7 +713,7 @@ function regText(hasB, hasF){
   const memo = $("#rgMemo").value.trim();
   if(!regEditId){ // 새 등록: 링크와 건물 사진이 필수
     if(!link){ toast("카카오맵 링크를 붙여넣어 주세요"); return null; }
-    if(!/kko\.to|map\.kakao\.com/.test(link)){ toast("카카오맵 공유 링크가 아니에요. 다시 확인해 주세요"); return null; }
+    if(!isKakaoUrl(link)){ toast("카카오맵 공유 링크가 아니에요. 다시 확인해 주세요"); return null; }
     if(!hasB){ toast("건물/외관 사진을 꼭 붙여주세요"); return null; }
   } else if(!memo && !hasB && !hasF){
     toast("바꿀 내용을 적거나 새 사진을 붙여주세요"); return null;
@@ -730,11 +736,13 @@ async function sendReg(mode){
   const files = [fB, fF].filter(Boolean);
   if(mode==="share" && navigator.share && files.length && navigator.canShare && navigator.canShare({files})){
     // 카카오톡 등은 사진+글을 함께 받으면 글을 버리므로, 공유 전에 글을 미리 복사해 둠
-    try{ await navigator.clipboard?.writeText(text); }catch(e){}
+    let copied = false;
+    try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); copied = true; } }catch(e){}
     try{
       await navigator.share({files}); // 사진만 공유
       closeReg();
-      toast("사진을 보냈어요! 내용은 복사돼 있으니 대화창에 붙여넣기 해주세요");
+      toast(copied ? "사진을 보냈어요! 내용은 복사돼 있으니 대화창에 붙여넣기 해주세요"
+                   : "사진을 보냈어요! 아래 '내용만 복사'로 글도 복사해 붙여넣어 주세요");
       return;
     }catch(e){ if(e.name==="AbortError") return; }
   }
@@ -748,11 +756,13 @@ async function sendReg(mode){
 
 /* ===== 관리자 승인 대기함 (localStorage, 서버 없이 이 기기에서) ===== */
 let qFilter = "pending";
+let qPendingCount = 0; // 렌더 때마다 파싱하지 않도록 캐시 (저장 시에만 갱신)
 function loadQueue(){ try{ return JSON.parse(store.get("hm_queue")||"[]"); }catch(e){ return []; } }
-function saveQueue(q){ store.set("hm_queue", JSON.stringify(q)); }
+function saveQueue(q){ store.set("hm_queue", JSON.stringify(q)); qPendingCount = q.filter(x=>x.status==="pending").length; }
 
 function parseSubmissions(text){
-  const parts = text.split(/(?=📍 채맵 등록 요청|✏️ 채맵 수정 요청)/).map(s=>s.trim()).filter(Boolean);
+  // 이모지가 빠지거나 변형돼도 '채맵 등록/수정 요청' 글자만으로 분리 (일부 폰 대응)
+  const parts = text.split(/(?=(?:📍\s*)?채맵 등록 요청|(?:✏️\s*)?채맵 수정 요청)/).map(s=>s.trim()).filter(Boolean);
   return parts.filter(p=>/채맵 (등록|수정) 요청/.test(p)).map(raw=>{
     const g = re => ((raw.match(re)||[])[1]||"").trim();
     return { id:"q"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
@@ -796,7 +806,7 @@ async function copyApproved(){
 function renderQueue(){
   const q = loadQueue();
   const cnt = {pending:0,approved:0,rejected:0};
-  q.forEach(x=>cnt[x.status]++);
+  q.forEach(x=>{ if(cnt[x.status]!==undefined) cnt[x.status]++; });
   const tabs = [["pending","대기"],["approved","승인"],["rejected","거절"]];
   $("#qTabs").innerHTML = tabs.map(([k,l])=>
     `<button class="q-tab ${qFilter===k?"on":""}" onclick="qFilter='${k}';renderQueue()">${l} ${cnt[k]}</button>`).join("");
@@ -806,7 +816,8 @@ function renderQueue(){
   box.innerHTML = list.map(x=>{
     const badge = x.type==="수정" ? `<span class="q-badge edit">수정</span>` : `<span class="q-badge reg">등록</span>`;
     const st = x.status!=="pending" ? `<span class="q-status ${x.status}">${x.status==="approved"?"승인됨":"거절됨"}</span>` : "";
-    const link = x.link ? `<div class="q-line">🔗 <a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.link)}</a></div>` : "";
+    const safe = safeUrl(x.link);
+    const link = x.link ? `<div class="q-line">🔗 ${safe?`<a href="${esc(safe)}" target="_blank" rel="noopener">${esc(x.link)}</a>`:esc(x.link)}</div>` : "";
     const note = x.note ? `<div class="q-line">💬 ${esc(x.note)}</div>` : "";
     const meta = `<div class="q-line">${esc(x.cat||"?")}${x.from?` · ${esc(x.from)}`:""}${x.photo?` · 📷 ${esc(x.photo)}`:""}</div>`;
     const acts = x.status==="pending"
