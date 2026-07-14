@@ -248,19 +248,15 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
   <div class="modal">
     <button class="close-x" onclick="closeReg()" aria-label="닫기">✕</button>
     <h2 id="regTitle">📍 장소 등록하기</h2>
-    <p class="desc">다녀온 곳을 직접 등록해 주세요. 관리자 확인 후 지도에 올라갑니다.
-    삭제는 관리자만 할 수 있어요.</p>
+    <p class="desc">카카오맵 링크와 직접 찍은 사진만 있으면 돼요. 정확한 이름·주소·메뉴는
+    관리자가 업데이트할 때 링크에서 자동으로 정리됩니다. 삭제는 관리자만 할 수 있어요.</p>
     <div class="field">
-      <label>장소 이름</label>
-      <input id="rgName" type="text" placeholder="예: 만월">
+      <label>카카오맵 링크 <small>(필수 · 카카오맵에서 장소 → 공유 → 링크 복사)</small></label>
+      <input id="rgLink" type="url" placeholder="https://kko.to/..." inputmode="url">
     </div>
     <div class="field">
       <label>카테고리</label>
       <select id="rgCat"></select>
-    </div>
-    <div class="field">
-      <label>주소</label>
-      <input id="rgAddr" type="text" placeholder="예: 경기 성남시 분당구 ...">
     </div>
     <div class="field">
       <label>건물/외관 사진 <small>(직접 촬영 · 필수)</small></label>
@@ -271,16 +267,12 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
       <input id="rgPhotoF" type="file" accept="image/*">
     </div>
     <div class="field">
-      <label>대표 메뉴와 가격 <small>(선택)</small></label>
-      <textarea id="rgMenu" placeholder="예: 차돌백짬뽕 14,000원&#10;탕수육 31,000원"></textarea>
+      <label>장소 이름 <small>(선택 · 링크만으로도 알 수 있어요)</small></label>
+      <input id="rgName" type="text" placeholder="예: 만월">
     </div>
     <div class="field">
-      <label>알아두기 <small>(선택 · 주차, 웨이팅, 꿀팁)</small></label>
+      <label id="rgMemoLabel">한마디 <small>(선택 · 추천 이유, 주차·웨이팅 꿀팁)</small></label>
       <textarea id="rgMemo" placeholder="예: 화요일 휴무, 주차는 건물 뒤"></textarea>
-    </div>
-    <div class="field">
-      <label>카카오맵 링크 <small>(선택 · 있으면 정리에 도움돼요)</small></label>
-      <input id="rgLink" type="url" placeholder="https://kko.to/..." inputmode="url">
     </div>
     <div class="field">
       <label>보내는 사람 <small>(선택)</small></label>
@@ -290,8 +282,8 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
       <button class="btn-ghost" onclick="sendReg('copy')">내용만 복사</button>
       <button class="btn-primary" onclick="sendReg('share')">사진과 함께 공유</button>
     </div>
-    <p class="fineprint">공유를 누르면 사진과 내용이 카카오톡 등으로 관리자에게 전달돼요.
-    복사를 쓰면 사진은 카톡에서 직접 첨부해 주세요.</p>
+    <p class="fineprint">공유를 누르면 사진과 내용이 카카오톡 등으로 관리자에게 전달되고,
+    관리자가 채맵을 업데이트할 때 한꺼번에 정리돼요. 복사를 쓰면 사진은 카톡에서 직접 첨부해 주세요.</p>
   </div>
 </div>
 
@@ -638,12 +630,13 @@ function openReg(editId){
   $("#rgCat").innerHTML = CATS.map(c=>`<option value="${c.id}">${c.emoji} ${c.id}</option>`).join("");
   const p = regEditId ? PLACES.find(x=>x.id===regEditId) : null;
   $("#regTitle").textContent = p ? "✏️ 정보 수정하기" : "📍 장소 등록하기";
-  $("#rgName").value = p ? p.name : "";
-  $("#rgAddr").value = p ? p.address : "";
-  $("#rgCat").value  = p ? p.category : CATS[0].id;
-  $("#rgMenu").value = p ? (p.menu||[]).map(m=>m.join(" ")).join("\n") : "";
-  $("#rgMemo").value = p ? (p.notes||"") : "";
+  $("#rgMemoLabel").innerHTML = p
+    ? '바꿀 내용 <small>(무엇을 어떻게 고칠지 적어주세요)</small>'
+    : '한마디 <small>(선택 · 추천 이유, 주차·웨이팅 꿀팁)</small>';
   $("#rgLink").value = p ? (p.kakao||"") : "";
+  $("#rgName").value = p ? p.name : "";
+  $("#rgCat").value  = p ? p.category : CATS[0].id;
+  $("#rgMemo").value = "";
   $("#rgFrom").value = "";
   $("#rgPhotoB").value = ""; $("#rgPhotoF").value = "";
   $("#regBg").style.display = "flex";
@@ -651,21 +644,21 @@ function openReg(editId){
 function closeReg(){ $("#regBg").style.display = "none"; }
 
 function regText(hasB, hasF){
-  const name = $("#rgName").value.trim();
-  const addr = $("#rgAddr").value.trim();
-  if(!name){ toast("장소 이름을 적어주세요"); return null; }
-  if(!addr && !regEditId){ toast("주소를 적어주세요"); return null; }
-  if(!hasB && !regEditId){ toast("건물/외관 사진을 꼭 붙여주세요"); return null; }
-  let t = regEditId ? "✏️ 채맵 수정 요청\n" : "📍 채맵 등록 요청\n";
-  t += `장소: ${name}\n`;
-  t += `카테고리: ${$("#rgCat").value}\n`;
-  if(addr) t += `주소: ${addr}\n`;
-  const menu = $("#rgMenu").value.trim();
-  if(menu) t += `메뉴:\n${menu}\n`;
-  const memo = $("#rgMemo").value.trim();
-  if(memo) t += `알아두기: ${memo}\n`;
   const link = $("#rgLink").value.trim();
+  const name = $("#rgName").value.trim();
+  const memo = $("#rgMemo").value.trim();
+  if(!regEditId){ // 새 등록: 링크와 건물 사진이 필수
+    if(!link){ toast("카카오맵 링크를 붙여넣어 주세요"); return null; }
+    if(!/kko\.to|map\.kakao\.com/.test(link)){ toast("카카오맵 공유 링크가 아니에요. 다시 확인해 주세요"); return null; }
+    if(!hasB){ toast("건물/외관 사진을 꼭 붙여주세요"); return null; }
+  } else if(!memo && !hasB && !hasF){
+    toast("바꿀 내용을 적거나 새 사진을 붙여주세요"); return null;
+  }
+  let t = regEditId ? "✏️ 채맵 수정 요청\n" : "📍 채맵 등록 요청\n";
   if(link) t += `카카오맵: ${link}\n`;
+  if(name) t += `장소: ${name}\n`;
+  t += `카테고리: ${$("#rgCat").value}\n`;
+  if(memo) t += `${regEditId?"바꿀 내용":"한마디"}: ${memo}\n`;
   const from = $("#rgFrom").value.trim();
   if(from) t += `보낸 사람: ${from}\n`;
   t += `사진: 건물 ${hasB?"1장":"없음"}, 음식 ${hasF?"1장":"없음"}\n`;
