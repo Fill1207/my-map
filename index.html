@@ -144,7 +144,11 @@ svg.korea{width:100%;height:auto;display:block;max-height:70dvh}
 /* 홈 화면 카테고리 아이콘 배경 — 위 .t-* 색의 13% 투명 버전 (색 바꿀 땐 두 줄 함께) */
 .ic-date{background:#d4577f22}.ic-trip{background:#3a946322}.ic-food{background:#d96f3322}
 .ic-cafe{background:#8a644422}.ic-fish{background:#3573bd22}.ic-church{background:#7457b322}
-.cname{font-size:18px;font-weight:700;letter-spacing:-.4px}
+.photo-link{display:block;text-decoration:none;position:relative}
+.cname{display:inline-flex;align-items:baseline;gap:7px;font-size:18px;font-weight:700;letter-spacing:-.4px;
+  text-decoration:none;color:var(--ink)}
+.cname-go{font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap}
+@media(hover:hover){.cname:hover .cname-go{text-decoration:underline}}
 .chier{font-size:12.5px;color:var(--sub);margin-top:3px}
 .caddr{display:flex;align-items:flex-start;gap:6px;font-size:13.5px;color:var(--sub);margin-top:10px}
 .cmenu{margin-top:12px;background:var(--bg);border-radius:var(--r-btn);padding:11px 14px;font-size:14px}
@@ -490,7 +494,12 @@ function filtered(){
   return list;
 }
 function kakaoUrl(p){
-  if(p.kakao) return p.kakao;
+  if(p.kakao){
+    // place.map.kakao.com/{id} 형태면 폰에서 앱으로 바로 열리는 딥링크로 변환
+    const m = p.kakao.match(/place\.map\.kakao\.com\/(\d+)/);
+    if(m) return "https://map.kakao.com/link/map/"+m[1];
+    return p.kakao; // kko.to 단축링크 등은 그대로 (자체적으로 앱을 엶)
+  }
   return "https://map.kakao.com/link/search/"+encodeURIComponent(`${p.si||""} ${p.gu||""} ${p.name}`.trim());
 }
 /* 카카오 CDN에 축소본(가로 400px)을 요청해 데이터 사용량을 줄임 — C·R 외 스펙은 403 */
@@ -615,14 +624,17 @@ function card(p){
   const menu = (p.menu&&p.menu.length)
     ? `<div class="cmenu">`+p.menu.map(([m,pr])=>`<div class="row"><b>${esc(m)}</b><span>${esc(pr)}</span></div>`).join("")+`</div>` : "";
   const notes = p.notes?`<div class="cnotes"><b>알아두기</b> · ${esc(p.notes)}</div>`:"";
-  return `<div class="card">${photo}<div class="cbody">
+  const kurl = esc(kakaoUrl(p));
+  return `<div class="card">
+    <a class="photo-link" href="${kurl}" target="_blank" rel="noopener" aria-label="${esc(p.name)} 카카오맵에서 보기">${photo}</a>
+    <div class="cbody">
     <span class="cat-tag t-${c.cls}">${c.emoji} ${esc(p.category)}</span>
-    <div class="cname">${esc(p.name)}</div>
+    <a class="cname" href="${kurl}" target="_blank" rel="noopener">${esc(p.name)} <span class="cname-go">카카오맵 ›</span></a>
     <div class="chier">${esc(hier)}</div>
     <div class="caddr"><span>🧭</span><span>${esc(p.address)}</span></div>
     ${menu}${notes}
     <div class="cbtns">
-      <a class="go-kakao" href="${esc(kakaoUrl(p))}" target="_blank" rel="noopener">카카오맵에서 보기</a>
+      <a class="go-kakao" href="${kurl}" target="_blank" rel="noopener">카카오맵에서 보기</a>
       <button class="copy-addr" data-copy="${esc(p.address||p.name)}">주소 복사</button>
       <button class="copy-addr" data-edit="${esc(p.id)}">수정</button>
     </div>
