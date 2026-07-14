@@ -144,11 +144,7 @@ svg.korea{width:100%;height:auto;display:block;max-height:70dvh}
 /* 홈 화면 카테고리 아이콘 배경 — 위 .t-* 색의 13% 투명 버전 (색 바꿀 땐 두 줄 함께) */
 .ic-date{background:#d4577f22}.ic-trip{background:#3a946322}.ic-food{background:#d96f3322}
 .ic-cafe{background:#8a644422}.ic-fish{background:#3573bd22}.ic-church{background:#7457b322}
-.photo-link{display:block;text-decoration:none;position:relative}
-.cname{display:inline-flex;align-items:baseline;gap:7px;font-size:18px;font-weight:700;letter-spacing:-.4px;
-  text-decoration:none;color:var(--ink)}
-.cname-go{font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap}
-@media(hover:hover){.cname:hover .cname-go{text-decoration:underline}}
+.cname{font-size:18px;font-weight:700;letter-spacing:-.4px}
 .chier{font-size:12.5px;color:var(--sub);margin-top:3px}
 .caddr{display:flex;align-items:flex-start;gap:6px;font-size:13.5px;color:var(--sub);margin-top:10px}
 .cmenu{margin-top:12px;background:var(--bg);border-radius:var(--r-btn);padding:11px 14px;font-size:14px}
@@ -184,6 +180,10 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
   border-radius:var(--r-btn);background:var(--bg);font-size:15px;outline:none;transition:border-color .15s}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
 .field textarea{resize:vertical;min-height:64px}
+.field-help{font-size:12px;color:var(--sub);line-height:1.5}
+.kakao-open{width:100%;padding:12px 0;border-radius:var(--r-btn);background:var(--kakao);color:var(--kakao-ink);
+  font-weight:700;font-size:14.5px;transition:transform .1s}
+.kakao-open:active{transform:scale(.98)}
 .modal-btns{display:flex;gap:8px;margin-top:6px}
 .modal-btns button{flex:1;padding:13px 0;border-radius:var(--r-btn);font-weight:700;font-size:15px;transition:transform .1s}
 .modal-btns button:active{transform:scale(.98)}
@@ -278,8 +278,10 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
     <p class="desc">카카오맵 링크와 직접 찍은 사진만 있으면 돼요. 정확한 이름·주소·메뉴는
     관리자가 업데이트할 때 링크에서 자동으로 정리됩니다. 삭제는 관리자만 할 수 있어요.</p>
     <div class="field">
-      <label>카카오맵 링크 <small>(필수 · 카카오맵에서 장소 → 공유 → 링크 복사)</small></label>
-      <input id="rgLink" type="url" placeholder="https://kko.to/..." inputmode="url">
+      <label>카카오맵 링크 <small>(필수)</small></label>
+      <button type="button" class="kakao-open" onclick="openKakao()">🗺️ 카카오맵 열어서 장소 찾기</button>
+      <input id="rgLink" type="url" placeholder="찾은 뒤 공유 → 링크 복사해 여기 붙여넣기" inputmode="url">
+      <span class="field-help">채맵 안에서 카카오맵이 열려요. 장소를 찾아 <b>공유 → 링크 복사</b> 후 돌아와 붙여넣으세요.</span>
     </div>
     <div class="field">
       <label>카테고리</label>
@@ -631,11 +633,9 @@ function card(p){
     ? `<div class="cmenu">`+p.menu.map(([m,pr])=>`<div class="row"><b>${esc(m)}</b><span>${esc(pr)}</span></div>`).join("")+`</div>` : "";
   const notes = p.notes?`<div class="cnotes"><b>알아두기</b> · ${esc(p.notes)}</div>`:"";
   const kurl = esc(kakaoUrl(p));
-  return `<div class="card">
-    <a class="photo-link" href="${kurl}" target="_blank" rel="noopener" aria-label="${esc(p.name)} 카카오맵에서 보기">${photo}</a>
-    <div class="cbody">
+  return `<div class="card">${photo}<div class="cbody">
     <span class="cat-tag t-${c.cls}">${c.emoji} ${esc(p.category)}</span>
-    <a class="cname" href="${kurl}" target="_blank" rel="noopener">${esc(p.name)} <span class="cname-go">카카오맵 ›</span></a>
+    <div class="cname">${esc(p.name)}</div>
     <div class="chier">${esc(hier)}</div>
     <div class="caddr"><span>🧭</span><span>${esc(p.address)}</span></div>
     ${menu}${notes}
@@ -706,6 +706,13 @@ function openReg(editId){
   $("#regBg").style.display = "flex";
 }
 function closeReg(){ $("#regBg").style.display = "none"; }
+
+/* 채맵 안에서 카카오맵 열기 — 이름을 적었으면 그 이름으로 검색해서 엶 (폰에선 카카오맵 앱이 뜸) */
+function openKakao(){
+  const q = ($("#rgName").value||"").trim();
+  const url = q ? "https://map.kakao.com/link/search/"+encodeURIComponent(q) : "https://map.kakao.com/";
+  window.open(url, "_blank", "noopener");
+}
 
 function regText(hasB, hasF){
   const link = $("#rgLink").value.trim();
