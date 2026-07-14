@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>나만의 지도</title>
+<title>채맵</title>
 <meta name="robots" content="noindex, nofollow">
 <style>
 /* ============================================================
@@ -129,6 +129,7 @@ svg.korea{width:100%;height:auto;display:block;max-height:70dvh}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){.card{animation:none}.shake{animation:none}}
 .photo{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--map)}
+.photo2{aspect-ratio:16/7;border-top:2px solid var(--card)} /* 음식 사진 (선택) */
 .ph-placeholder{width:100%;aspect-ratio:16/7;display:flex;align-items:center;justify-content:center;font-size:40px}
 .ph-date{background:linear-gradient(135deg,#f0a5bd,#d4577f)}
 .ph-trip{background:linear-gradient(135deg,#8fd0a8,#3a9463)}
@@ -207,7 +208,7 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 <div id="lock">
   <div class="lock-card">
     <div class="lock-emblem">📍</div>
-    <h1>나만의 지도</h1>
+    <h1>채맵</h1>
     <p>우리끼리 보는 지도예요.<br>전달받은 비밀번호를 입력해 주세요.</p>
     <div class="booting" id="bootSpin" hidden><div class="spinner"></div>지도 여는 중</div>
     <form class="lock-form" id="lockForm">
@@ -227,10 +228,10 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
     <div class="head-in">
       <div class="title-row">
         <div class="brand" onclick="goHome()">
-          <span class="mark">📍</span><b>나만의 지도</b>
+          <span class="mark">📍</span><b>채맵</b>
         </div>
         <span class="count-pill" id="totalPill"></span>
-        <button class="suggest-btn" onclick="openSuggest()">✉️ 장소 제안</button>
+        <button class="suggest-btn" onclick="openReg()">＋ 장소 등록</button>
       </div>
       <input class="search" id="q" type="search" placeholder="이름, 지역, 메뉴로 검색" oninput="onSearch()">
       <div class="chips" id="chips"></div>
@@ -242,39 +243,55 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
   </div>
 </div>
 
-<!-- 장소 제안 모달 -->
-<div class="modal-bg" id="suggestBg" style="display:none" onclick="if(event.target===this)closeSuggest()">
+<!-- 장소 등록/수정 모달 -->
+<div class="modal-bg" id="regBg" style="display:none" onclick="if(event.target===this)closeReg()">
   <div class="modal">
-    <button class="close-x" onclick="closeSuggest()" aria-label="닫기">✕</button>
-    <h2>✉️ 장소 제안하기</h2>
-    <p class="desc">추천하고 싶은 곳을 알려주세요. 관리자가 확인하면 지도에 올라갑니다.
-    등록과 삭제는 관리자만 할 수 있어요.</p>
+    <button class="close-x" onclick="closeReg()" aria-label="닫기">✕</button>
+    <h2 id="regTitle">📍 장소 등록하기</h2>
+    <p class="desc">다녀온 곳을 직접 등록해 주세요. 관리자 확인 후 지도에 올라갑니다.
+    삭제는 관리자만 할 수 있어요.</p>
     <div class="field">
-      <label>카카오맵 링크 <small>(카카오맵에서 장소 → 공유 → 링크 복사)</small></label>
-      <input id="sgLink" type="url" placeholder="https://kko.to/..." inputmode="url">
-    </div>
-    <div class="field">
-      <label>장소 이름 <small>(선택)</small></label>
-      <input id="sgName" type="text" placeholder="예: 만월">
+      <label>장소 이름</label>
+      <input id="rgName" type="text" placeholder="예: 만월">
     </div>
     <div class="field">
       <label>카테고리</label>
-      <select id="sgCat"></select>
+      <select id="rgCat"></select>
     </div>
     <div class="field">
-      <label>한마디 <small>(선택 · 추천 이유, 꿀팁)</small></label>
-      <textarea id="sgMemo" placeholder="예: 주차 어렵지만 짬뽕이 인생임"></textarea>
+      <label>주소</label>
+      <input id="rgAddr" type="text" placeholder="예: 경기 성남시 분당구 ...">
+    </div>
+    <div class="field">
+      <label>건물/외관 사진 <small>(직접 촬영 · 필수)</small></label>
+      <input id="rgPhotoB" type="file" accept="image/*">
+    </div>
+    <div class="field">
+      <label>음식 사진 <small>(직접 촬영 · 선택)</small></label>
+      <input id="rgPhotoF" type="file" accept="image/*">
+    </div>
+    <div class="field">
+      <label>대표 메뉴와 가격 <small>(선택)</small></label>
+      <textarea id="rgMenu" placeholder="예: 차돌백짬뽕 14,000원&#10;탕수육 31,000원"></textarea>
+    </div>
+    <div class="field">
+      <label>알아두기 <small>(선택 · 주차, 웨이팅, 꿀팁)</small></label>
+      <textarea id="rgMemo" placeholder="예: 화요일 휴무, 주차는 건물 뒤"></textarea>
+    </div>
+    <div class="field">
+      <label>카카오맵 링크 <small>(선택 · 있으면 정리에 도움돼요)</small></label>
+      <input id="rgLink" type="url" placeholder="https://kko.to/..." inputmode="url">
     </div>
     <div class="field">
       <label>보내는 사람 <small>(선택)</small></label>
-      <input id="sgFrom" type="text" placeholder="이름 또는 별명">
+      <input id="rgFrom" type="text" placeholder="이름 또는 별명">
     </div>
     <div class="modal-btns">
-      <button class="btn-ghost" onclick="sendSuggest('copy')">내용 복사</button>
-      <button class="btn-primary" onclick="sendSuggest('share')">카톡 등으로 공유</button>
+      <button class="btn-ghost" onclick="sendReg('copy')">내용만 복사</button>
+      <button class="btn-primary" onclick="sendReg('share')">사진과 함께 공유</button>
     </div>
-    <p class="fineprint">공유 버튼을 누르면 카카오톡 같은 앱으로 관리자에게 바로 보낼 수 있어요.
-    복사했다면 관리자에게 붙여넣어 보내주세요.</p>
+    <p class="fineprint">공유를 누르면 사진과 내용이 카카오톡 등으로 관리자에게 전달돼요.
+    복사를 쓰면 사진은 카톡에서 직접 첨부해 주세요.</p>
   </div>
 </div>
 
@@ -529,7 +546,7 @@ function viewRegion(list){
 
 function viewList(list, heading, grouped){
   if(!list.length) return (heading?`<div class="crumb"><span>${heading}</span></div>`:"")+
-    `<div class="empty"><span class="big">🗺️</span>아직 여기엔 기록된 장소가 없어요.<br>오른쪽 위 <b>장소 제안</b>으로 추천해 주세요!</div>`;
+    `<div class="empty"><span class="big">🗺️</span>아직 여기엔 기록된 장소가 없어요.<br>오른쪽 위 <b>장소 등록</b>으로 직접 올려주세요!</div>`;
   let h = heading?`<div class="crumb"><span>${heading}</span></div>`:"";
   if(grouped){
     const bySi = {};
@@ -552,9 +569,10 @@ function viewList(list, heading, grouped){
 
 function card(p){
   const c = CAT_BY_ID[p.category]||{emoji:"📍",cls:"date"};
-  const photo = p.photo
+  let photo = p.photo
     ? `<img class="photo" src="${esc(slimPhoto(p.photo))}" alt="${esc(p.name)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph-placeholder ph-${c.cls}&quot;>${c.emoji}</div>'">`
     : `<div class="ph-placeholder ph-${c.cls}">${c.emoji}</div>`;
+  if(p.photoFood) photo += `<img class="photo photo2" src="${esc(slimPhoto(p.photoFood))}" alt="${esc(p.name)} 음식" loading="lazy">`;
   const hier = [p.do,p.si,p.gu,p.dong].filter(Boolean).join(" · ");
   const menu = (p.menu&&p.menu.length)
     ? `<div class="cmenu">`+p.menu.map(([m,pr])=>`<div class="row"><b>${esc(m)}</b><span>${esc(pr)}</span></div>`).join("")+`</div>` : "";
@@ -568,6 +586,7 @@ function card(p){
     <div class="cbtns">
       <a class="go-kakao" href="${esc(kakaoUrl(p))}" target="_blank" rel="noopener">카카오맵에서 보기</a>
       <button class="copy-addr" data-copy="${esc(p.address||p.name)}">주소 복사</button>
+      <button class="copy-addr" data-edit="${esc(p.id)}">수정</button>
     </div>
     ${p.added?`<div class="cdate">등록 ${esc(p.added)}</div>`:""}
   </div></div>`;
@@ -591,6 +610,7 @@ $("#main").addEventListener("click", e=>{
   const t = e.target.closest("[data-si],[data-gu],[data-copy]");
   if(!t) return;
   if(t.dataset.copy !== undefined) copyText(t.dataset.copy, "주소를 복사했어요");
+  else if(t.dataset.edit !== undefined) openReg(t.dataset.edit);
   else if(t.dataset.si !== undefined) setSi(t.dataset.si);
   else if(t.dataset.gu !== undefined) setGu(t.dataset.gu);
 });
@@ -610,38 +630,60 @@ async function copyText(text, doneMsg){
   }catch(e){ toast("복사에 실패했어요. 길게 눌러 직접 복사해 주세요"); return false; }
 }
 
-/* ===== 장소 제안 ===== */
-function openSuggest(){
-  $("#sgCat").innerHTML = CATS.map(c=>`<option value="${c.id}">${c.emoji} ${c.id}</option>`).join("");
-  $("#suggestBg").style.display = "flex";
-}
-function closeSuggest(){ $("#suggestBg").style.display = "none"; }
+/* ===== 장소 등록/수정 (사용자 누구나 · 삭제는 관리자만) ===== */
+let regEditId = null; // null이면 새 등록, 값이 있으면 기존 장소 수정
 
-function suggestText(){
-  const link = $("#sgLink").value.trim();
-  const name = $("#sgName").value.trim();
-  const cat  = $("#sgCat").value;
-  const memo = $("#sgMemo").value.trim();
-  const from = $("#sgFrom").value.trim();
-  if(!link && !name){ toast("링크나 장소 이름 중 하나는 적어주세요"); return null; }
-  let t = "📍 나만의 지도에 장소 제안\n";
-  if(name) t += `장소: ${name}\n`;
-  if(link) t += `링크: ${link}\n`;
-  t += `카테고리: ${cat}\n`;
-  if(memo) t += `한마디: ${memo}\n`;
+function openReg(editId){
+  regEditId = editId || null;
+  $("#rgCat").innerHTML = CATS.map(c=>`<option value="${c.id}">${c.emoji} ${c.id}</option>`).join("");
+  const p = regEditId ? PLACES.find(x=>x.id===regEditId) : null;
+  $("#regTitle").textContent = p ? "✏️ 정보 수정하기" : "📍 장소 등록하기";
+  $("#rgName").value = p ? p.name : "";
+  $("#rgAddr").value = p ? p.address : "";
+  $("#rgCat").value  = p ? p.category : CATS[0].id;
+  $("#rgMenu").value = p ? (p.menu||[]).map(m=>m.join(" ")).join("\n") : "";
+  $("#rgMemo").value = p ? (p.notes||"") : "";
+  $("#rgLink").value = p ? (p.kakao||"") : "";
+  $("#rgFrom").value = "";
+  $("#rgPhotoB").value = ""; $("#rgPhotoF").value = "";
+  $("#regBg").style.display = "flex";
+}
+function closeReg(){ $("#regBg").style.display = "none"; }
+
+function regText(hasB, hasF){
+  const name = $("#rgName").value.trim();
+  const addr = $("#rgAddr").value.trim();
+  if(!name){ toast("장소 이름을 적어주세요"); return null; }
+  if(!addr && !regEditId){ toast("주소를 적어주세요"); return null; }
+  if(!hasB && !regEditId){ toast("건물/외관 사진을 꼭 붙여주세요"); return null; }
+  let t = regEditId ? "✏️ 채맵 수정 요청\n" : "📍 채맵 등록 요청\n";
+  t += `장소: ${name}\n`;
+  t += `카테고리: ${$("#rgCat").value}\n`;
+  if(addr) t += `주소: ${addr}\n`;
+  const menu = $("#rgMenu").value.trim();
+  if(menu) t += `메뉴:\n${menu}\n`;
+  const memo = $("#rgMemo").value.trim();
+  if(memo) t += `알아두기: ${memo}\n`;
+  const link = $("#rgLink").value.trim();
+  if(link) t += `카카오맵: ${link}\n`;
+  const from = $("#rgFrom").value.trim();
   if(from) t += `보낸 사람: ${from}\n`;
+  t += `사진: 건물 ${hasB?"1장":"없음"}, 음식 ${hasF?"1장":"없음"}\n`;
   return t;
 }
 
-async function sendSuggest(mode){
-  const text = suggestText();
+async function sendReg(mode){
+  const fB = $("#rgPhotoB").files[0], fF = $("#rgPhotoF").files[0];
+  const text = regText(!!fB, !!fF);
   if(!text) return;
   if(mode==="share" && navigator.share){
-    try{ await navigator.share({text}); closeSuggest(); return; }
+    const files = [fB, fF].filter(Boolean);
+    const payload = (files.length && navigator.canShare && navigator.canShare({files})) ? {text, files} : {text};
+    try{ await navigator.share(payload); closeReg(); return; }
     catch(e){ if(e.name==="AbortError") return; }
   }
-  const ok = await copyText(text, "복사했어요! 관리자에게 카톡으로 보내주세요");
-  if(ok) closeSuggest();
+  const ok = await copyText(text, "복사했어요! 사진과 함께 관리자에게 카톡으로 보내주세요");
+  if(ok) closeReg();
 }
 </script>
 </body>
