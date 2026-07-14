@@ -669,10 +669,19 @@ async function sendReg(mode){
   const fB = $("#rgPhotoB").files[0], fF = $("#rgPhotoF").files[0];
   const text = regText(!!fB, !!fF);
   if(!text) return;
-  if(mode==="share" && navigator.share){
-    const files = [fB, fF].filter(Boolean);
-    const payload = (files.length && navigator.canShare && navigator.canShare({files})) ? {text, files} : {text};
-    try{ await navigator.share(payload); closeReg(); return; }
+  const files = [fB, fF].filter(Boolean);
+  if(mode==="share" && navigator.share && files.length && navigator.canShare && navigator.canShare({files})){
+    // 카카오톡 등은 사진+글을 함께 받으면 글을 버리므로, 공유 전에 글을 미리 복사해 둠
+    try{ await navigator.clipboard?.writeText(text); }catch(e){}
+    try{
+      await navigator.share({files}); // 사진만 공유
+      closeReg();
+      toast("사진을 보냈어요! 내용은 복사돼 있으니 대화창에 붙여넣기 해주세요");
+      return;
+    }catch(e){ if(e.name==="AbortError") return; }
+  }
+  if(mode==="share" && navigator.share && !files.length){
+    try{ await navigator.share({text}); closeReg(); return; }
     catch(e){ if(e.name==="AbortError") return; }
   }
   const ok = await copyText(text, "복사했어요! 사진과 함께 관리자에게 카톡으로 보내주세요");
