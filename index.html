@@ -188,6 +188,29 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 .modal .fineprint{font-size:12px;color:var(--sub);margin-top:14px;line-height:1.6}
 .modal .close-x{position:sticky;float:right;top:0;font-size:20px;color:var(--sub);padding:2px 6px}
 
+/* ---------- 관리자 승인 대기함 ---------- */
+.q-paste{width:100%;min-height:64px;padding:11px 14px;border:1.5px solid var(--line);border-radius:var(--r-btn);
+  background:var(--bg);font-size:14px;outline:none;resize:vertical}
+.q-paste:focus{border-color:var(--accent)}
+.q-tabs{display:flex;gap:7px;margin:16px 0 4px}
+.q-tab{padding:6px 13px;border-radius:99px;border:1.5px solid var(--line);background:var(--card);
+  font-size:13px;font-weight:600;color:var(--sub)}
+.q-tab.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.q-item{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px}
+.q-item .q-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.q-badge{font-size:11px;font-weight:700;color:#fff;border-radius:6px;padding:2px 7px}
+.q-badge.reg{background:var(--accent)} .q-badge.edit{background:#d96f33}
+.q-item .q-name{font-weight:700;font-size:15px}
+.q-item .q-line{font-size:13px;color:var(--sub);margin-top:2px;word-break:break-all}
+.q-item .q-line a{color:var(--accent)}
+.q-acts{display:flex;gap:8px;margin-top:10px}
+.q-acts button{flex:1;padding:8px 0;border-radius:9px;font-weight:700;font-size:13px}
+.q-ok{background:var(--accent);color:#fff} .q-no{background:var(--bg);border:1px solid var(--line);color:var(--danger)}
+.q-empty{text-align:center;color:var(--sub);padding:28px 0;font-size:14px}
+.q-status{font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;margin-left:auto}
+.q-status.approved{background:#e6f4ea;color:#1e7d3c} .q-status.rejected{background:#fbe9e7;color:#c0392b}
+@media(prefers-color-scheme:dark){.q-status.approved{background:#16351f;color:#7ed99b}.q-status.rejected{background:#3a1f1c;color:#f0a094}}
+
 /* ---------- 토스트 ---------- */
 #toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);
   background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;border-radius:99px;
@@ -284,6 +307,28 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
     </div>
     <p class="fineprint">공유를 누르면 사진과 내용이 카카오톡 등으로 관리자에게 전달되고,
     관리자가 채맵을 업데이트할 때 한꺼번에 정리돼요. 복사를 쓰면 사진은 카톡에서 직접 첨부해 주세요.</p>
+  </div>
+</div>
+
+<!-- 관리자 승인 대기함 -->
+<div class="modal-bg" id="queueBg" style="display:none" onclick="if(event.target===this)closeQueue()">
+  <div class="modal">
+    <button class="close-x" onclick="closeQueue()" aria-label="닫기">✕</button>
+    <h2>🗂️ 승인 대기함 <span style="font-size:13px;color:var(--sub);font-weight:500">(관리자)</span></h2>
+    <p class="desc">지인이 카톡으로 보낸 등록·수정 요청을 여기 붙여넣으면 카드로 쌓여요.
+    검토해서 승인/거절하고, 승인한 것만 한 번에 클로드에게 넘기면 됩니다.</p>
+    <textarea class="q-paste" id="qPaste" placeholder="카톡에서 복사한 '📍 채맵 등록 요청 …' 내용을 붙여넣으세요 (여러 개 한꺼번에 OK)"></textarea>
+    <div class="modal-btns" style="margin-top:8px">
+      <button class="btn-ghost" onclick="clearDone()">처리한 것 비우기</button>
+      <button class="btn-primary" onclick="addToQueue()">대기함에 추가</button>
+    </div>
+    <div class="q-tabs" id="qTabs"></div>
+    <div id="queueList"></div>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn-primary" onclick="copyApproved()">승인한 목록 클로드에게 넘기기</button>
+    </div>
+    <p class="fineprint">넘기기를 누르면 승인된 요청이 복사돼요. 클로드에게 붙여넣고 사진과 함께
+    "채맵 업데이트"라고 하면, 카카오맵에서 정확한 정보를 새로 가져와 지도에 올려줍니다.</p>
   </div>
 </div>
 
@@ -461,8 +506,9 @@ function render(noAnim){
   if(S.q) m.innerHTML = viewList(list, `"${esc(S.q)}" 검색 결과 ${list.length}곳`);
   else if(S.view==="region") m.innerHTML = viewRegion(list);
   else m.innerHTML = viewHome(list);
+  const qN = loadQueue().filter(x=>x.status==="pending").length;
   $("#foot").innerHTML = `<span>총 ${PLACES.length}곳 기록됨 · 비밀번호를 아는 사람만 볼 수 있어요</span>
-    <span><button onclick="lockApp()">이 기기에서 잠그기</button></span>`;
+    <span><button onclick="openQueue()">🗂️ 승인 대기함${qN?` (${qN})`:""}</button> · <button onclick="lockApp()">이 기기에서 잠그기</button></span>`;
 }
 
 function renderChips(){
@@ -686,6 +732,76 @@ async function sendReg(mode){
   }
   const ok = await copyText(text, "복사했어요! 사진과 함께 관리자에게 카톡으로 보내주세요");
   if(ok) closeReg();
+}
+
+/* ===== 관리자 승인 대기함 (localStorage, 서버 없이 이 기기에서) ===== */
+let qFilter = "pending";
+function loadQueue(){ try{ return JSON.parse(store.get("hm_queue")||"[]"); }catch(e){ return []; } }
+function saveQueue(q){ store.set("hm_queue", JSON.stringify(q)); }
+
+function parseSubmissions(text){
+  const parts = text.split(/(?=📍 채맵 등록 요청|✏️ 채맵 수정 요청)/).map(s=>s.trim()).filter(Boolean);
+  return parts.filter(p=>/채맵 (등록|수정) 요청/.test(p)).map(raw=>{
+    const g = re => ((raw.match(re)||[])[1]||"").trim();
+    return { id:"q"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+      raw, type: /수정 요청/.test(raw) ? "수정" : "등록",
+      link:g(/카카오맵:\s*(.+)/), name:g(/장소:\s*(.+)/), cat:g(/카테고리:\s*(.+)/),
+      note:g(/(?:한마디|바꿀 내용):\s*(.+)/), from:g(/보낸 사람:\s*(.+)/), photo:g(/사진:\s*(.+)/),
+      status:"pending" };
+  });
+}
+
+function openQueue(){ qFilter="pending"; renderQueue(); $("#queueBg").style.display="flex"; }
+function closeQueue(){ $("#queueBg").style.display="none"; render(); }
+
+function addToQueue(){
+  const text = $("#qPaste").value;
+  const items = parseSubmissions(text);
+  if(!items.length){ toast("붙여넣은 내용에서 등록/수정 요청을 찾지 못했어요"); return; }
+  const q = loadQueue();
+  const existing = new Set(q.map(x=>x.raw));
+  const fresh = items.filter(x=>!existing.has(x.raw));
+  saveQueue(q.concat(fresh));
+  $("#qPaste").value = "";
+  qFilter = "pending"; renderQueue();
+  toast(`${fresh.length}건 추가됨${items.length-fresh.length?` (중복 ${items.length-fresh.length}건 제외)`:""}`);
+}
+
+function setQ(id, status){ const q=loadQueue(); const it=q.find(x=>x.id===id); if(it){ it.status=status; saveQueue(q); renderQueue(); } }
+function clearDone(){
+  const q = loadQueue().filter(x=>x.status==="pending");
+  saveQueue(q); renderQueue();
+  toast("승인·거절 처리한 항목을 비웠어요");
+}
+
+async function copyApproved(){
+  const appr = loadQueue().filter(x=>x.status==="approved");
+  if(!appr.length){ toast("승인한 항목이 없어요"); return; }
+  const text = "채맵 업데이트\n\n" + appr.map(x=>x.raw).join("\n\n");
+  await copyText(text, `승인 ${appr.length}건 복사됨! 클로드에게 붙여넣어 주세요`);
+}
+
+function renderQueue(){
+  const q = loadQueue();
+  const cnt = {pending:0,approved:0,rejected:0};
+  q.forEach(x=>cnt[x.status]++);
+  const tabs = [["pending","대기"],["approved","승인"],["rejected","거절"]];
+  $("#qTabs").innerHTML = tabs.map(([k,l])=>
+    `<button class="q-tab ${qFilter===k?"on":""}" onclick="qFilter='${k}';renderQueue()">${l} ${cnt[k]}</button>`).join("");
+  const list = q.filter(x=>x.status===qFilter);
+  const box = $("#queueList");
+  if(!list.length){ box.innerHTML = `<div class="q-empty">${qFilter==="pending"?"대기 중인 요청이 없어요":"목록이 비어 있어요"}</div>`; return; }
+  box.innerHTML = list.map(x=>{
+    const badge = x.type==="수정" ? `<span class="q-badge edit">수정</span>` : `<span class="q-badge reg">등록</span>`;
+    const st = x.status!=="pending" ? `<span class="q-status ${x.status}">${x.status==="approved"?"승인됨":"거절됨"}</span>` : "";
+    const link = x.link ? `<div class="q-line">🔗 <a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(x.link)}</a></div>` : "";
+    const note = x.note ? `<div class="q-line">💬 ${esc(x.note)}</div>` : "";
+    const meta = `<div class="q-line">${esc(x.cat||"?")}${x.from?` · ${esc(x.from)}`:""}${x.photo?` · 📷 ${esc(x.photo)}`:""}</div>`;
+    const acts = x.status==="pending"
+      ? `<div class="q-acts"><button class="q-ok" onclick="setQ('${x.id}','approved')">승인</button><button class="q-no" onclick="setQ('${x.id}','rejected')">거절</button></div>`
+      : `<div class="q-acts"><button class="q-no" onclick="setQ('${x.id}','pending')">되돌리기</button></div>`;
+    return `<div class="q-item"><div class="q-top">${badge}<span class="q-name">${esc(x.name||"(이름 미입력 · 링크에서 확인)")}</span>${st}</div>${link}${note}${meta}${acts}</div>`;
+  }).join("");
 }
 </script>
 </body>
