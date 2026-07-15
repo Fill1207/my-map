@@ -35,8 +35,11 @@ function setup(){
     key = Utilities.getUuid().replace(/-/g,'').slice(0,12);
     PROP.setProperty('ADMIN_KEY', key);
   }
+  // 사이트 비밀번호 — 이걸 아는 사람만 읽기/등록 가능 (지인만 보게)
+  if(!PROP.getProperty('SITE_PW')) PROP.setProperty('SITE_PW', '0828');
   Logger.log('✅ 준비 완료');
   Logger.log('ADMIN_KEY(관리자 열쇠): ' + key);
+  Logger.log('SITE_PW(사이트 비번): ' + PROP.getProperty('SITE_PW'));
   Logger.log('SHEET_ID: ' + sheetId);
 }
 
@@ -66,6 +69,7 @@ function doGet(e){
     return json_({items: rows});
   }
   if(p.action === 'approved'){
+    if(p.pw !== PROP.getProperty('SITE_PW')) return json_({error:'no-auth'}); // 비번 아는 사람만
     return json_({items: rows.filter(r=>r.status==='approved')});
   }
   return json_({ok:true, msg:'채맵 서버 작동 중'});
@@ -87,6 +91,7 @@ function doPost(e){
   try{ b = JSON.parse(e.postData.contents); }catch(err){ return json_({error:'bad-json'}); }
 
   if(b.action === 'submit'){
+    if(b.pw !== PROP.getProperty('SITE_PW')) return json_({error:'no-auth'}); // 비번 아는 사람만 등록
     const id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     const folder = DriveApp.getFolderById(PROP.getProperty('FOLDER_ID'));
     const save = (dataUrl, tag) => {
