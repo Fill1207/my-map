@@ -755,21 +755,20 @@ async function sendReg(mode){
   const text = regText(!!fB, !!fF);
   if(!text) return;
   const files = [fB, fF].filter(Boolean);
-  if(mode==="share" && navigator.share && files.length && navigator.canShare && navigator.canShare({files})){
-    // 카카오톡 등은 사진+글을 함께 받으면 글을 버리므로, 공유 전에 글을 미리 복사해 둠
-    let copied = false;
-    try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); copied = true; } }catch(e){}
+  // 글(장소 정보)을 항상 클립보드에 백업 — 카톡이 사진과 함께 온 글을 버려도 붙여넣을 수 있게
+  let copied = false;
+  try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); copied = true; } }catch(e){}
+  if(mode==="share" && navigator.share){
+    const canFiles = files.length && navigator.canShare && navigator.canShare({files});
+    const payload = canFiles ? {title:"채맵 장소 등록", text, files} : {title:"채맵 장소 등록", text};
     try{
-      await navigator.share({files}); // 사진만 공유
+      await navigator.share(payload); // 글 + 사진 함께 공유
       closeReg();
-      toast(copied ? "사진을 보냈어요! 내용은 복사돼 있으니 대화창에 붙여넣기 해주세요"
-                   : "사진을 보냈어요! 아래 '내용만 복사'로 글도 복사해 붙여넣어 주세요");
+      toast(canFiles && copied
+        ? "공유했어요! 혹시 글이 안 보이면 붙여넣기(복사됨) 하세요"
+        : "공유했어요! 관리자에게 보내주세요");
       return;
     }catch(e){ if(e.name==="AbortError") return; }
-  }
-  if(mode==="share" && navigator.share && !files.length){
-    try{ await navigator.share({text}); closeReg(); return; }
-    catch(e){ if(e.name==="AbortError") return; }
   }
   const ok = await copyText(text, "복사했어요! 사진과 함께 관리자에게 카톡으로 보내주세요");
   if(ok) closeReg();
