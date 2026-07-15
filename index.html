@@ -309,11 +309,10 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
       <input id="rgFrom" type="text" placeholder="이름 또는 별명">
     </div>
     <div class="modal-btns">
-      <button class="btn-ghost" onclick="sendReg('copy')">내용만 복사</button>
-      <button class="btn-primary" onclick="sendReg('share')">사진과 함께 공유</button>
+      <button class="btn-primary" id="rgSend" onclick="sendReg()">등록 요청 보내기</button>
     </div>
-    <p class="fineprint">공유를 누르면 사진과 내용이 카카오톡 등으로 관리자에게 전달되고,
-    관리자가 채맵을 업데이트할 때 한꺼번에 정리돼요. 복사를 쓰면 사진은 카톡에서 직접 첨부해 주세요.</p>
+    <p class="fineprint">보내면 관리자 승인 대기함에 바로 쌓여요. 관리자가 승인하면
+    카카오맵에서 정확한 이름·주소를 가져와 지도에 자동으로 올라갑니다.</p>
   </div>
 </div>
 
@@ -322,20 +321,13 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
   <div class="modal">
     <button class="close-x" onclick="closeQueue()" aria-label="닫기">✕</button>
     <h2>🗂️ 승인 대기함 <span style="font-size:13px;color:var(--sub);font-weight:500">(관리자)</span></h2>
-    <p class="desc">지인이 카톡으로 보낸 등록·수정 요청을 여기 붙여넣으면 카드로 쌓여요.
-    검토해서 승인/거절하고, 승인한 것만 한 번에 클로드에게 넘기면 됩니다.</p>
-    <textarea class="q-paste" id="qPaste" placeholder="카톡에서 복사한 '📍 채맵 등록 요청 …' 내용을 붙여넣으세요 (여러 개 한꺼번에 OK)"></textarea>
-    <div class="modal-btns" style="margin-top:8px">
-      <button class="btn-ghost" onclick="clearDone()">처리한 것 비우기</button>
-      <button class="btn-primary" onclick="addToQueue()">대기함에 추가</button>
-    </div>
+    <p class="desc">지인이 등록한 요청이 여기 자동으로 쌓여요. 검토해서 승인하면
+    카카오맵에서 이름·주소를 가져와 지도에 바로 올라갑니다.</p>
     <div class="q-tabs" id="qTabs"></div>
     <div id="queueList"></div>
     <div class="modal-btns" style="margin-top:16px">
-      <button class="btn-primary" onclick="copyApproved()">승인한 목록 클로드에게 넘기기</button>
+      <button class="btn-ghost" onclick="refreshQueue()">새로고침</button>
     </div>
-    <p class="fineprint">넘기기를 누르면 승인된 요청이 복사돼요. 클로드에게 붙여넣고 사진과 함께
-    "채맵 업데이트"라고 하면, 카카오맵에서 정확한 정보를 새로 가져와 지도에 올려줍니다.</p>
   </div>
 </div>
 
@@ -368,8 +360,66 @@ const REGIONS = [
   {name:"제주도",   short:"제주", codes:["39"],           label:[236,760]},
 ];
 
+/* ===== 서버 (구글 앱스 스크립트) ===== */
+const SERVER = "https://script.google.com/macros/s/AKfycbx3QQP0O7eaRx-Nqso7mQKrB2NN4tmNggpzVI9w-punAeS19CFv_cth1Cb48gXOrTOxiw/exec";
+
+/* 주소 문자열 → 도/시/구/동 (지도 배치용). 광역시는 인근 도 그룹에 포함 */
+function addrToRegion(addr){
+  const a = String(addr||"").trim();
+  const p = a.split(/\s+/);
+  const head = p[0]||"";
+  const doMap = [
+    [/^(서울|인천|경기)/,"경기도"], [/^강원/,"강원도"], [/^충북|^충청북/,"충청북도"],
+    [/^(대전|세종|충남|충청남)/,"충청남도"], [/^전북|^전라북/,"전라북도"],
+    [/^(광주|전남|전라남)/,"전라남도"], [/^(대구|경북|경상북)/,"경상북도"],
+    [/^(부산|울산|경남|경상남)/,"경상남도"], [/^제주/,"제주도"],
+  ];
+  let dou = ""; for(const [re,name] of doMap){ if(re.test(head)){ dou=name; break; } }
+  const metros = {서울:"서울특별시",부산:"부산광역시",대구:"대구광역시",인천:"인천광역시",
+    광주:"광주광역시",대전:"대전광역시",울산:"울산광역시",세종:"세종특별자치시"};
+  let si = (p.find(x=>/시$/.test(x))) || metros[head] || "";
+  const gu = (p.find(x=>/구$/.test(x))) || "";
+  const dong = (p.find(x=>/(동|읍|면)$/.test(x))) || "";
+  return {do: dou||"경기도", si: si||head, gu, dong};
+}
+function serverPhotoUrl(id){ return SERVER + "?action=photo&id=" + encodeURIComponent(id); }
+/* 사진 엔드포인트는 base64 글자를 주므로 data URL로 변환해 <img>에 사용 */
+async function fetchPhotoDataUrl(id){
+  try{ const r = await fetch(serverPhotoUrl(id)); return "data:image/jpeg;base64," + (await r.text()).trim(); }
+  catch(e){ return ""; }
+}
+
+/* 서버 승인 항목 → 앱의 장소 형식 (사진은 뒤에서 채움) */
+function serverItemToPlace(it){
+  return Object.assign({
+    id: it.id, name: it.placeName || it.name || "(이름 미상)",
+    category: CAT_BY_ID[it.category] ? it.category : "맛집",
+    address: it.address || "", menu: [], notes: it.note || "",
+    photo: "", photoFood: "",
+    kakao: it.link || "", added: String(it.created||"").slice(0,10), fromServer: true
+  }, addrToRegion(it.address));
+}
+
+/* 승인된 서버 장소를 지도에 합치기 (비번 아는 사람만 읽힘) */
+async function loadServerPlaces(pw){
+  try{
+    const r = await fetch(SERVER + "?action=approved&pw=" + encodeURIComponent(pw));
+    const d = await r.json();
+    if(!d || !d.items) return;
+    const news = d.items.filter(it=>it.type!=="수정"); // 수정 요청은 지도에 새 핀으로 안 띄움
+    const places = await Promise.all(news.map(async it=>{
+      const p = serverItemToPlace(it);
+      if(it.photoB) p.photo = await fetchPhotoDataUrl(it.photoB);
+      if(it.photoF) p.photoFood = await fetchPhotoDataUrl(it.photoF);
+      return p;
+    }));
+    PLACES = BASE_PLACES.concat(places);
+  }catch(e){ /* 서버 연결 실패해도 기본 장소는 보임 */ }
+}
+
 /* ===== 상태 ===== */
-let PLACES = [];
+let BASE_PLACES = []; // 암호화 데이터(40곳)
+let PLACES = [];      // 기본 + 서버 승인분
 let S = {view:"home", region:null, si:null, gu:null, cat:null, q:""};
 
 /* ===== 도우미 ===== */
@@ -438,12 +488,14 @@ function failReason(err){
 }
 
 async function unlock(pw){
-  PLACES = await decryptPlaces(pw);
-  qPendingCount = loadQueue().filter(x=>x.status==="pending").length; // 대기 건수 초기화
+  BASE_PLACES = await decryptPlaces(pw);
+  PLACES = BASE_PLACES.slice();
   store.set("hm_pw", pw);
   $("#lock").style.display = "none";
   $("#app").hidden = false;
   render();
+  // 서버 승인 장소를 뒤이어 합쳐서 다시 그림 (연결 실패해도 기본 40곳은 이미 보임)
+  loadServerPlaces(pw).then(()=>render());
 }
 
 function showLockError(err){
@@ -727,123 +779,129 @@ function extractKakaoShare(text){
   return {url, name};
 }
 
-function regText(hasB, hasF){
+/* 등록 폼 입력 검증 + 데이터 수집 */
+function regData(hasB, hasF){
   const ex = extractKakaoShare($("#rgLink").value);
   const link = ex.url || $("#rgLink").value.trim();
-  const name = $("#rgName").value.trim() || ex.name; // 이름칸이 비었으면 공유 텍스트에서 뽑은 이름 사용
+  const name = $("#rgName").value.trim() || ex.name;
   const memo = $("#rgMemo").value.trim();
-  if(!regEditId){ // 새 등록: 링크와 건물 사진이 필수
+  if(!regEditId){
     if(!link){ toast("카카오맵 링크를 붙여넣어 주세요"); return null; }
     if(!isKakaoUrl(link)){ toast("카카오맵 공유 링크가 아니에요. 카카오맵에서 복사한 내용을 그대로 붙여넣어 주세요"); return null; }
     if(!hasB){ toast("건물/외관 사진을 꼭 붙여주세요"); return null; }
   } else if(!memo && !hasB && !hasF){
     toast("바꿀 내용을 적거나 새 사진을 붙여주세요"); return null;
   }
-  let t = regEditId ? "✏️ 채맵 수정 요청\n" : "📍 채맵 등록 요청\n";
-  if(link) t += `카카오맵: ${link}\n`;
-  if(name) t += `장소: ${name}\n`;
-  t += `카테고리: ${$("#rgCat").value}\n`;
-  if(memo) t += `${regEditId?"바꿀 내용":"한마디"}: ${memo}\n`;
-  const from = $("#rgFrom").value.trim();
-  if(from) t += `보낸 사람: ${from}\n`;
-  t += `사진: 건물 ${hasB?"1장":"없음"}, 음식 ${hasF?"1장":"없음"}\n`;
-  return t;
+  return {type: regEditId?"수정":"등록", link, name, category: $("#rgCat").value,
+          note: memo, from: $("#rgFrom").value.trim(), editId: regEditId||""};
 }
 
-async function sendReg(mode){
-  const fB = $("#rgPhotoB").files[0], fF = $("#rgPhotoF").files[0];
-  const text = regText(!!fB, !!fF);
-  if(!text) return;
-  const files = [fB, fF].filter(Boolean);
-  // 글(장소 정보)을 항상 클립보드에 백업 — 카톡이 사진과 함께 온 글을 버려도 붙여넣을 수 있게
-  let copied = false;
-  try{ if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); copied = true; } }catch(e){}
-  if(mode==="share" && navigator.share){
-    const canFiles = files.length && navigator.canShare && navigator.canShare({files});
-    const payload = canFiles ? {title:"채맵 장소 등록", text, files} : {title:"채맵 장소 등록", text};
-    try{
-      await navigator.share(payload); // 글 + 사진 함께 공유
-      closeReg();
-      toast(canFiles && copied
-        ? "공유했어요! 혹시 글이 안 보이면 붙여넣기(복사됨) 하세요"
-        : "공유했어요! 관리자에게 보내주세요");
-      return;
-    }catch(e){ if(e.name==="AbortError") return; }
-  }
-  const ok = await copyText(text, "복사했어요! 사진과 함께 관리자에게 카톡으로 보내주세요");
-  if(ok) closeReg();
-}
-
-/* ===== 관리자 승인 대기함 (localStorage, 서버 없이 이 기기에서) ===== */
-let qFilter = "pending";
-let qPendingCount = 0; // 렌더 때마다 파싱하지 않도록 캐시 (저장 시에만 갱신)
-function loadQueue(){ try{ return JSON.parse(store.get("hm_queue")||"[]"); }catch(e){ return []; } }
-function saveQueue(q){ store.set("hm_queue", JSON.stringify(q)); qPendingCount = q.filter(x=>x.status==="pending").length; }
-
-function parseSubmissions(text){
-  // 이모지가 빠지거나 변형돼도 '채맵 등록/수정 요청' 글자만으로 분리 (일부 폰 대응)
-  const parts = text.split(/(?=(?:📍\s*)?채맵 등록 요청|(?:✏️\s*)?채맵 수정 요청)/).map(s=>s.trim()).filter(Boolean);
-  return parts.filter(p=>/채맵 (등록|수정) 요청/.test(p)).map(raw=>{
-    const g = re => ((raw.match(re)||[])[1]||"").trim();
-    return { id:"q"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-      raw, type: /수정 요청/.test(raw) ? "수정" : "등록",
-      link:g(/카카오맵:\s*(.+)/), name:g(/장소:\s*(.+)/), cat:g(/카테고리:\s*(.+)/),
-      note:g(/(?:한마디|바꿀 내용):\s*(.+)/), from:g(/보낸 사람:\s*(.+)/), photo:g(/사진:\s*(.+)/),
-      status:"pending" };
+/* 사진을 가로 1000px·jpeg로 줄여 base64 data URL로 (업로드 가볍게) */
+function fileToResizedDataURL(file, maxW=1000, quality=0.72){
+  return new Promise(res=>{
+    if(!file){ res(""); return; }
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      let w=img.width, h=img.height;
+      if(w>maxW){ h=Math.round(h*maxW/w); w=maxW; }
+      const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+      cv.getContext("2d").drawImage(img,0,0,w,h);
+      res(cv.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); res(""); };
+    img.src = url;
   });
 }
 
-function openQueue(){ qFilter="pending"; renderQueue(); $("#queueBg").style.display="flex"; }
+async function serverPost(body){
+  const r = await fetch(SERVER, {method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(body)});
+  try{ return await r.json(); }catch(e){ return {ok:true}; } // 리다이렉트로 본문을 못 읽어도 처리는 됨
+}
+
+/* 등록/수정 요청 → 서버로 바로 전송 (승인 대기함에 쌓임) */
+async function sendReg(){
+  const fB = $("#rgPhotoB").files[0], fF = $("#rgPhotoF").files[0];
+  const d = regData(!!fB, !!fF);
+  if(!d) return;
+  const btn = $("#rgSend"); btn.disabled = true; btn.textContent = "보내는 중…";
+  try{
+    const [photoB, photoF] = await Promise.all([fileToResizedDataURL(fB), fileToResizedDataURL(fF)]);
+    const res = await serverPost(Object.assign({action:"submit", pw: store.get("hm_pw")||""}, d, {photoB, photoF}));
+    if(res && res.error==="no-auth"){ toast("비밀번호 문제로 등록에 실패했어요"); }
+    else { closeReg(); toast("등록 요청 완료! 관리자 승인 후 지도에 떠요"); }
+  }catch(e){ toast("전송 실패 — 인터넷 확인 후 다시 시도해 주세요"); }
+  btn.disabled = false; btn.textContent = "등록 요청 보내기";
+}
+
+/* ===== 관리자 승인 대기함 (서버 연동) ===== */
+let qFilter = "pending";
+let qPendingCount = 0;
+let serverQueue = [];
+let ADMIN_KEY = "";
+function getAdminKey(){ return (ADMIN_KEY = ADMIN_KEY || store.get("hm_adminkey") || ""); }
+
+async function openQueue(){
+  if(!getAdminKey()){
+    const k = prompt("관리자 열쇠(ADMIN_KEY)를 입력하세요 — 이 기기에 한 번만 저장됩니다:");
+    if(!k) return;
+    ADMIN_KEY = k.trim(); store.set("hm_adminkey", ADMIN_KEY);
+  }
+  qFilter = "pending";
+  $("#queueBg").style.display = "flex";
+  refreshQueue();
+}
 function closeQueue(){ $("#queueBg").style.display="none"; render(); }
 
-function addToQueue(){
-  const text = $("#qPaste").value;
-  const items = parseSubmissions(text);
-  if(!items.length){ toast("붙여넣은 내용에서 등록/수정 요청을 찾지 못했어요"); return; }
-  const q = loadQueue();
-  const existing = new Set(q.map(x=>x.raw));
-  const fresh = items.filter(x=>!existing.has(x.raw));
-  saveQueue(q.concat(fresh));
-  $("#qPaste").value = "";
-  qFilter = "pending"; renderQueue();
-  toast(`${fresh.length}건 추가됨${items.length-fresh.length?` (중복 ${items.length-fresh.length}건 제외)`:""}`);
+async function refreshQueue(){
+  $("#queueList").innerHTML = `<div class="q-empty">불러오는 중…</div>`;
+  try{
+    const r = await fetch(SERVER + "?action=list&key=" + encodeURIComponent(getAdminKey()));
+    const d = await r.json();
+    if(d.error){
+      store.del("hm_adminkey"); ADMIN_KEY = "";
+      $("#queueList").innerHTML = `<div class="q-empty">관리자 열쇠가 맞지 않아요.<br>다시 열어 입력해 주세요.</div>`;
+      return;
+    }
+    serverQueue = d.items || [];
+    qPendingCount = serverQueue.filter(x=>x.status==="pending").length;
+    renderQueue();
+  }catch(e){ $("#queueList").innerHTML = `<div class="q-empty">서버에 연결하지 못했어요</div>`; }
 }
 
-function setQ(id, status){ const q=loadQueue(); const it=q.find(x=>x.id===id); if(it){ it.status=status; saveQueue(q); renderQueue(); } }
-function clearDone(){
-  const q = loadQueue().filter(x=>x.status==="pending");
-  saveQueue(q); renderQueue();
-  toast("승인·거절 처리한 항목을 비웠어요");
-}
-
-async function copyApproved(){
-  const appr = loadQueue().filter(x=>x.status==="approved");
-  if(!appr.length){ toast("승인한 항목이 없어요"); return; }
-  const text = "채맵 업데이트\n\n" + appr.map(x=>x.raw).join("\n\n");
-  await copyText(text, `승인 ${appr.length}건 복사됨! 클로드에게 붙여넣어 주세요`);
+async function qAction(id, action){
+  const it = serverQueue.find(x=>x.id===id);
+  if(action==="delete" && !confirm("이 요청을 완전히 삭제할까요?")) return;
+  if(it){ it.status = action==="approve"?"approved":action==="reject"?"rejected":it.status; renderQueue(); }
+  if(action==="approve") toast("승인 중… 카카오맵에서 정보 가져오는 중");
+  await serverPost({action, id, key:getAdminKey()});
+  await refreshQueue();
+  if(action==="approve"){ toast("승인 완료! 지도에 반영했어요"); loadServerPlaces(store.get("hm_pw")||"").then(()=>render()); }
 }
 
 function renderQueue(){
-  const q = loadQueue();
   const cnt = {pending:0,approved:0,rejected:0};
-  q.forEach(x=>{ if(cnt[x.status]!==undefined) cnt[x.status]++; });
+  serverQueue.forEach(x=>{ if(cnt[x.status]!==undefined) cnt[x.status]++; });
   const tabs = [["pending","대기"],["approved","승인"],["rejected","거절"]];
   $("#qTabs").innerHTML = tabs.map(([k,l])=>
     `<button class="q-tab ${qFilter===k?"on":""}" onclick="qFilter='${k}';renderQueue()">${l} ${cnt[k]}</button>`).join("");
-  const list = q.filter(x=>x.status===qFilter);
+  const list = serverQueue.filter(x=>x.status===qFilter);
   const box = $("#queueList");
   if(!list.length){ box.innerHTML = `<div class="q-empty">${qFilter==="pending"?"대기 중인 요청이 없어요":"목록이 비어 있어요"}</div>`; return; }
   box.innerHTML = list.map(x=>{
+    const nm = x.placeName || x.name || "(이름 미상 · 링크에서 확인)";
     const badge = x.type==="수정" ? `<span class="q-badge edit">수정</span>` : `<span class="q-badge reg">등록</span>`;
     const st = x.status!=="pending" ? `<span class="q-status ${x.status}">${x.status==="approved"?"승인됨":"거절됨"}</span>` : "";
     const safe = safeUrl(x.link);
     const link = x.link ? `<div class="q-line">🔗 ${safe?`<a href="${esc(safe)}" target="_blank" rel="noopener">${esc(x.link)}</a>`:esc(x.link)}</div>` : "";
     const note = x.note ? `<div class="q-line">💬 ${esc(x.note)}</div>` : "";
-    const meta = `<div class="q-line">${esc(x.cat||"?")}${x.from?` · ${esc(x.from)}`:""}${x.photo?` · 📷 ${esc(x.photo)}`:""}</div>`;
+    const hasPhoto = (x.photoB?"건물":"") + (x.photoF?(x.photoB?"·음식":"음식"):"");
+    const meta = `<div class="q-line">${esc(x.category||"?")}${x.from?` · ${esc(x.from)}`:""}${hasPhoto?` · 📷 ${hasPhoto}`:""}</div>`;
     const acts = x.status==="pending"
-      ? `<div class="q-acts"><button class="q-ok" onclick="setQ('${x.id}','approved')">승인</button><button class="q-no" onclick="setQ('${x.id}','rejected')">거절</button></div>`
-      : `<div class="q-acts"><button class="q-no" onclick="setQ('${x.id}','pending')">되돌리기</button></div>`;
-    return `<div class="q-item"><div class="q-top">${badge}<span class="q-name">${esc(x.name||"(이름 미입력 · 링크에서 확인)")}</span>${st}</div>${link}${note}${meta}${acts}</div>`;
+      ? `<div class="q-acts"><button class="q-ok" onclick="qAction('${esc(x.id)}','approve')">승인</button><button class="q-no" onclick="qAction('${esc(x.id)}','reject')">거절</button></div>`
+      : `<div class="q-acts"><button class="q-no" onclick="qAction('${esc(x.id)}','delete')">삭제</button></div>`;
+    return `<div class="q-item"><div class="q-top">${badge}<span class="q-name">${esc(nm)}</span>${st}</div>${link}${note}${meta}${acts}</div>`;
   }).join("");
 }
 </script>
