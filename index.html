@@ -760,11 +760,17 @@ function openReg(editId){
 }
 function closeReg(){ $("#regBg").style.display = "none"; }
 
-/* 채맵 안에서 카카오맵 열기 — 이름을 적었으면 그 이름으로 검색해서 엶 (폰에선 카카오맵 앱이 뜸) */
+/* 카카오맵 열기 — 폰에선 앱을 바로 열어(빈 탭 안 생김), PC에선 새 탭으로 지도 */
 function openKakao(){
   const q = ($("#rgName").value||"").trim();
-  const url = q ? "https://map.kakao.com/link/search/"+encodeURIComponent(q) : "https://map.kakao.com/";
-  window.open(url, "_blank", "noopener");
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if(isMobile){
+    // 카카오맵 앱 직접 실행 — 현재 채맵 화면은 그대로 남고 브라우저 빈 탭이 안 생김
+    location.href = "kakaomap://search?q=" + encodeURIComponent(q);
+  }else{
+    const url = q ? "https://map.kakao.com/link/search/"+encodeURIComponent(q) : "https://map.kakao.com/";
+    window.open(url, "_blank", "noopener");
+  }
 }
 
 /* 카카오맵 공유 텍스트에서 링크·가게이름 추출
