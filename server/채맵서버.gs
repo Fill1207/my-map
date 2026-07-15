@@ -116,27 +116,26 @@ function doPost(e){
   return json_({error:'bad-action'});
 }
 
-/* 카카오맵 링크 → 실제 장소 id로 바꾼 뒤 og:title(이름)·og:description(주소) 수집 */
-function kakaoPlaceId_(link){
-  const m = String(link).match(/(?:place\.map\.kakao\.com\/|[?&]id=)(\d+)/);
-  if(m) return m[1];
-  try{
-    const res = UrlFetchApp.fetch(link, {followRedirects:false, muteHttpExceptions:true, headers:{'User-Agent':'Mozilla/5.0'}});
-    const loc = res.getAllHeaders()['Location'] || res.getAllHeaders()['location'] || '';
-    const m2 = String(loc).match(/(?:place\.map\.kakao\.com\/|[?&]id=)(\d+)/);
-    if(m2) return m2[1];
-  }catch(e){}
-  return '';
-}
+/* 카카오맵 링크 → 실제 장소 id → og:title(이름)·og:description(주소) 수집.
+   kko.to 짧은 링크는 최종 페이지 HTML의 'place?id=숫자'에서 id를 뽑음(앱스스크립트가
+   리다이렉트 헤더를 삼켜서 이 방식이 안정적) */
 function fetchKakao_(link){
   try{
-    const id = kakaoPlaceId_(link);
-    const url = id ? 'https://place.map.kakao.com/'+id : link;
-    const html = UrlFetchApp.fetch(url, {followRedirects:true, muteHttpExceptions:true, headers:{'User-Agent':'Mozilla/5.0'}}).getContentText();
+    const F = u => UrlFetchApp.fetch(u, {followRedirects:true, muteHttpExceptions:true, headers:{'User-Agent':'Mozilla/5.0'}}).getContentText();
+    let id = (String(link).match(/place\.map\.kakao\.com\/(\d+)/)||[])[1]
+          || (String(link).match(/[?&]id=(\d+)/)||[])[1] || '';
+    if(!id){
+      const h0 = F(link);
+      id = (h0.match(/place\?id=(\d+)/)||[])[1]
+        || (h0.match(/[?&]id=(\d+)/)||[])[1]
+        || (h0.match(/"id"\s*:\s*"?(\d+)"?/)||[])[1] || '';
+    }
+    if(!id) return {name:'', address:''};
+    const html = F('https://place.map.kakao.com/'+id);
     const g = re => { const m = html.match(re); return m ? m[1].trim() : ''; };
     let name = g(/<meta property="og:title" content="([^"]*)"/);
     let addr = g(/<meta property="og:description" content="([^"]*)"/);
-    if(name==='카카오맵'){ name=''; addr=''; } // 공통 태그면 버림
+    if(name==='카카오맵'){ name=''; addr=''; }
     return {name, address: addr};
   }catch(e){ return {name:'', address:''}; }
 }
