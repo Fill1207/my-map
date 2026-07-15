@@ -280,8 +280,9 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
     <div class="field">
       <label>카카오맵 링크 <small>(필수)</small></label>
       <button type="button" class="kakao-open" onclick="openKakao()">🗺️ 카카오맵 열어서 장소 찾기</button>
-      <input id="rgLink" type="url" placeholder="찾은 뒤 공유 → 링크 복사해 여기 붙여넣기" inputmode="url">
-      <span class="field-help">채맵 안에서 카카오맵이 열려요. 장소를 찾아 <b>공유 → 링크 복사</b> 후 돌아와 붙여넣으세요.</span>
+      <input id="rgLink" type="text" placeholder="찾은 뒤 공유 → 복사한 내용 그대로 붙여넣기" inputmode="url">
+      <span class="field-help">채맵 안에서 카카오맵이 열려요. 장소를 찾아 <b>공유 → 링크 복사</b> 후 돌아와 붙여넣으세요.
+      <b>[카카오맵] 가게이름 링크</b> 통째로 붙여넣어도 자동으로 정리돼요.</span>
     </div>
     <div class="field">
       <label>카테고리</label>
@@ -714,13 +715,26 @@ function openKakao(){
   window.open(url, "_blank", "noopener");
 }
 
+/* 카카오맵 공유 텍스트에서 링크·가게이름 추출
+   예: "[카카오맵] 만월 https://kko.to/abc" → {url, name} */
+function extractKakaoShare(text){
+  const t = (text||"").trim();
+  const um = t.match(/https?:\/\/(?:[a-z0-9-]+\.)*(?:kakao\.com|kko\.to)\/\S+/i);
+  const url = um ? um[0] : "";
+  let name = "";
+  const nm = t.match(/\[카카오맵\]\s*(.+)/); // [카카오맵] 뒤의 가게 이름
+  if(nm) name = nm[1].replace(/https?:\/\/\S+/g,"").replace(/\s+/g," ").trim();
+  return {url, name};
+}
+
 function regText(hasB, hasF){
-  const link = $("#rgLink").value.trim();
-  const name = $("#rgName").value.trim();
+  const ex = extractKakaoShare($("#rgLink").value);
+  const link = ex.url || $("#rgLink").value.trim();
+  const name = $("#rgName").value.trim() || ex.name; // 이름칸이 비었으면 공유 텍스트에서 뽑은 이름 사용
   const memo = $("#rgMemo").value.trim();
   if(!regEditId){ // 새 등록: 링크와 건물 사진이 필수
     if(!link){ toast("카카오맵 링크를 붙여넣어 주세요"); return null; }
-    if(!isKakaoUrl(link)){ toast("카카오맵 공유 링크가 아니에요. 다시 확인해 주세요"); return null; }
+    if(!isKakaoUrl(link)){ toast("카카오맵 공유 링크가 아니에요. 카카오맵에서 복사한 내용을 그대로 붙여넣어 주세요"); return null; }
     if(!hasB){ toast("건물/외관 사진을 꼭 붙여주세요"); return null; }
   } else if(!memo && !hasB && !hasF){
     toast("바꿀 내용을 적거나 새 사진을 붙여주세요"); return null;
