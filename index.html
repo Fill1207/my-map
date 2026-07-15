@@ -204,6 +204,8 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 .drow .dk{flex:0 0 74px;color:var(--sub);font-weight:600}
 .drow .dv{flex:1;white-space:pre-wrap;word-break:break-word}
 .drow .dv.none{color:var(--sub)}
+.detail-del{margin-top:10px;text-align:center}
+.detail-del button{font-size:13px;color:var(--danger);padding:8px 14px;border-radius:10px;background:transparent;border:1px solid var(--line);font-weight:600}
 .detail-title{font-size:21px;font-weight:800;letter-spacing:-.5px;margin-bottom:2px}
 .detail-sub{font-size:13px;color:var(--sub);margin-bottom:14px}
 .modal-btns{display:flex;gap:8px;margin-top:6px}
@@ -225,7 +227,7 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 .q-item{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px}
 .q-item .q-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .q-badge{font-size:11px;font-weight:700;color:#fff;border-radius:6px;padding:2px 7px}
-.q-badge.reg{background:var(--accent)} .q-badge.edit{background:#d96f33}
+.q-badge.reg{background:var(--accent)} .q-badge.edit{background:#d96f33} .q-badge.del{background:var(--danger)}
 .q-item .q-name{font-weight:700;font-size:15px}
 .q-item .q-line{font-size:13px;color:var(--sub);margin-top:2px;word-break:break-all}
 .q-item .q-line a{color:var(--accent)}
@@ -454,7 +456,8 @@ async function loadServerPlaces(pw){
     const r = await fetch(SERVER + "?action=approved&pw=" + encodeURIComponent(pw));
     const d = await r.json();
     if(!d || !d.items) return;
-    const news = d.items.filter(it=>it.type!=="수정"); // 수정 요청은 지도에 새 핀으로 안 띄움
+    const hidden = new Set(d.hidden||[]); // 삭제된 장소 id
+    const news = d.items.filter(it=>it.type==="등록" && !hidden.has(it.id)); // 등록분만, 숨긴 건 제외
     const places = await Promise.all(news.map(async it=>{
       const p = serverItemToPlace(it);
       p.photos = await Promise.all(p._photoIds.map(async ph=>({cat: ph.cat||"사진", url: await fetchPhotoDataUrl(ph.id)})));
@@ -462,7 +465,7 @@ async function loadServerPlaces(pw){
       p.photo = (p.photos[0]||{}).url || ""; // 카드 썸네일
       return p;
     }));
-    PLACES = BASE_PLACES.concat(places);
+    PLACES = BASE_PLACES.filter(p=>!hidden.has(p.id)).concat(places); // 기본 40곳도 숨김 반영
   }catch(e){ /* 서버 연결 실패해도 기본 장소는 보임 */ }
 }
 
@@ -847,12 +850,40 @@ function openDetail(id){
       <a class="go-kakao" href="${esc(kakaoUrl(p))}" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none;padding:13px 0;border-radius:var(--r-btn);font-weight:700">카카오맵</a>
       <button class="btn-ghost" onclick="copyDetailAddr()">주소 복사</button>
       <button class="btn-ghost" onclick="editFromDetail()">수정</button>
+    </div>
+    <div class="detail-del">
+      ${getAdminKey()
+        ? `<button onclick="adminDeletePlace()">🗑️ 삭제 (관리자)</button>`
+        : `<button onclick="requestDelete()">삭제 요청하기</button>`}
     </div>`;
   $("#detailBg").style.display = "flex";
 }
 function closeDetail(){ $("#detailBg").style.display = "none"; }
 function copyDetailAddr(){ if(detailPlace) copyText(detailPlace.address||detailPlace.name, "주소를 복사했어요"); }
 function editFromDetail(){ if(detailPlace){ const id = detailPlace.id; closeDetail(); openReg(id); } }
+
+/* 누구나: 삭제 요청 → 승인 대기함에 쌓임 */
+async function requestDelete(){
+  if(!detailPlace) return;
+  if(!confirm(`"${detailPlace.name}" 삭제를 요청할까요?\n관리자 확인 후 삭제됩니다.`)) return;
+  const reason = prompt("삭제 이유 (선택)") || "";
+  try{
+    await serverPost({action:"submit", pw: store.get("hm_pw")||"", type:"삭제요청",
+      editId: detailPlace.id, name: detailPlace.name, note: reason});
+    closeDetail(); toast("삭제 요청 완료! 관리자 확인 후 삭제돼요");
+  }catch(e){ toast("전송 실패 — 다시 시도해 주세요"); }
+}
+/* 관리자: 바로 삭제(숨김) */
+async function adminDeletePlace(){
+  if(!detailPlace) return;
+  if(!confirm(`"${detailPlace.name}" 을(를) 지도에서 삭제할까요?`)) return;
+  try{
+    await serverPost({action:"hide", id: detailPlace.id, key: getAdminKey()});
+    closeDetail();
+    await loadServerPlaces(store.get("hm_pw")||""); render();
+    toast("삭제했어요");
+  }catch(e){ toast("삭제 실패 — 다시 시도해 주세요"); }
+}
 
 /* 카카오맵 열기 — 폰에선 앱을 바로 열어(빈 탭 안 생김), PC에선 새 탭으로 지도 */
 function openKakao(){
@@ -998,16 +1029,21 @@ function renderQueue(){
   if(!list.length){ box.innerHTML = `<div class="q-empty">${qFilter==="pending"?"대기 중인 요청이 없어요":"목록이 비어 있어요"}</div>`; return; }
   box.innerHTML = list.map(x=>{
     const nm = x.placeName || x.name || "(이름 미상 · 링크에서 확인)";
-    const badge = x.type==="수정" ? `<span class="q-badge edit">수정</span>` : `<span class="q-badge reg">등록</span>`;
+    const badge = x.type==="삭제요청" ? `<span class="q-badge del">삭제요청</span>`
+                : x.type==="수정" ? `<span class="q-badge edit">수정</span>`
+                : `<span class="q-badge reg">등록</span>`;
     const st = x.status!=="pending" ? `<span class="q-status ${x.status}">${x.status==="approved"?"승인됨":"거절됨"}</span>` : "";
     const safe = safeUrl(x.link);
     const link = x.link ? `<div class="q-line">🔗 ${safe?`<a href="${esc(safe)}" target="_blank" rel="noopener">${esc(x.link)}</a>`:esc(x.link)}</div>` : "";
     const note = x.note ? `<div class="q-line">💬 ${esc(x.note)}</div>` : "";
     const photos = Array.isArray(x.photos) ? x.photos : [];
     const hasPhoto = photos.length ? `${photos.length}장` : "";
-    const meta = `<div class="q-line">${esc(x.category||"?")}${x.from?` · ${esc(x.from)}`:""}${hasPhoto?` · 📷 ${hasPhoto}`:""}</div>`;
+    const meta = x.type==="삭제요청"
+      ? `<div class="q-line">이 장소를 지도에서 삭제하는 요청이에요${x.from?` · ${esc(x.from)}`:""}</div>`
+      : `<div class="q-line">${esc(x.category||"?")}${x.from?` · ${esc(x.from)}`:""}${hasPhoto?` · 📷 ${hasPhoto}`:""}</div>`;
+    const okLabel = x.type==="삭제요청" ? "삭제 승인" : "승인";
     const acts = x.status==="pending"
-      ? `<div class="q-acts"><button class="q-ok" onclick="qAction('${esc(x.id)}','approve')">승인</button><button class="q-no" onclick="qAction('${esc(x.id)}','reject')">거절</button></div>`
+      ? `<div class="q-acts"><button class="q-ok" onclick="qAction('${esc(x.id)}','approve')">${okLabel}</button><button class="q-no" onclick="qAction('${esc(x.id)}','reject')">거절</button></div>`
       : `<div class="q-acts"><button class="q-no" onclick="qAction('${esc(x.id)}','delete')">삭제</button></div>`;
     return `<div class="q-item"><div class="q-top">${badge}<span class="q-name">${esc(nm)}</span>${st}</div>${link}${note}${meta}${acts}</div>`;
   }).join("");

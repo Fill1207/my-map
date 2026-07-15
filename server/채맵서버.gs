@@ -47,7 +47,8 @@ function doGet(e){
   }
   if(p.action === 'approved'){
     if(p.pw !== PROP.getProperty('SITE_PW')) return json_({error:'no-auth'});
-    return json_({items: rows.filter(r=>r.status==='approved')});
+    return json_({items: rows.filter(r=>r.status==='approved'),
+      hidden: JSON.parse(PROP.getProperty('HIDDEN')||'[]')}); // 삭제된(숨긴) 장소 id
   }
   return json_({ok:true, msg:'채맵 서버 작동 중'});
 }
@@ -84,18 +85,29 @@ function doPost(e){
   const sh = sheet_(); const vals = sh.getDataRange().getValues(); const head = vals[0];
   const col = name => head.indexOf(name)+1;
   const findRow = id => { for(let i=1;i<vals.length;i++) if(vals[i][head.indexOf('id')]===id) return i+1; return 0; };
+  const getHidden = () => JSON.parse(PROP.getProperty('HIDDEN')||'[]');
+  const setHidden = h => PROP.setProperty('HIDDEN', JSON.stringify(h));
+  const hidePlace = id => { const h=getHidden(); if(id && h.indexOf(id)<0){ h.push(id); setHidden(h); }
+    const r=findRow(id); if(r) sh.deleteRow(r); }; // 서버 등록분이면 행도 삭제
+
+  // 장소 삭제(숨김) — 기본 40곳이든 서버 등록분이든 id로 숨김. 대상이 시트에 없어도 OK
+  if(b.action === 'hide'){ hidePlace(b.id); return json_({ok:true}); }
+  if(b.action === 'unhide'){ setHidden(getHidden().filter(x=>x!==b.id)); return json_({ok:true}); }
+
   const row = findRow(b.id);
   if(!row) return json_({error:'not-found'});
 
   if(b.action === 'delete'){ sh.deleteRow(row); return json_({ok:true}); }
   if(b.action === 'reject'){ sh.getRange(row, col('status')).setValue('rejected'); return json_({ok:true}); }
   if(b.action === 'approve'){
-    const link = vals[row-1][head.indexOf('link')];
-    const info = fetchKakao_(link);
     const type = vals[row-1][head.indexOf('type')];
     const editId = vals[row-1][head.indexOf('editId')];
+    if(type==='삭제요청'){ // 승인 = 대상 장소 삭제
+      sh.getRange(row, col('status')).setValue('rejected'); // 요청 처리완료
+      hidePlace(editId);
+      return json_({ok:true, deleted:true});
+    }
     if(type==='수정' && editId){
-      // 대상 행에 비어있지 않은 값만 덮어쓰기
       const tRow = findRow(editId);
       if(tRow){
         ['category','note','phone','hours','menu'].forEach(f=>{
@@ -105,9 +117,10 @@ function doPost(e){
         const newPhotos = vals[row-1][head.indexOf('photos')];
         if(newPhotos && newPhotos!=='[]') sh.getRange(tRow, col('photos')).setValue(newPhotos);
       }
-      sh.getRange(row, col('status')).setValue('rejected'); // 수정요청 자체는 목록에서 처리완료로
+      sh.getRange(row, col('status')).setValue('rejected');
       return json_({ok:true, applied:true});
     }
+    const info = fetchKakao_(vals[row-1][head.indexOf('link')]);
     if(info.name) sh.getRange(row, col('placeName')).setValue(info.name);
     if(info.address) sh.getRange(row, col('address')).setValue(info.address);
     sh.getRange(row, col('status')).setValue('approved');
