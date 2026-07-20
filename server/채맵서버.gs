@@ -109,16 +109,20 @@ function doPost(e){
     }
     if(type==='수정' && editId){
       const tRow = findRow(editId);
-      if(tRow){
+      if(tRow){ // 서버 등록 장소 → 그 행에 직접 반영
         ['category','note','phone','hours','menu'].forEach(f=>{
           const v = vals[row-1][head.indexOf(f)];
           if(v!=='' && v!=null) sh.getRange(tRow, col(f)).setValue(v);
         });
         const newPhotos = vals[row-1][head.indexOf('photos')];
         if(newPhotos && newPhotos!=='[]') sh.getRange(tRow, col('photos')).setValue(newPhotos);
+        sh.getRange(row, col('status')).setValue('rejected');
+        return json_({ok:true, applied:true});
       }
-      sh.getRange(row, col('status')).setValue('rejected');
-      return json_({ok:true, applied:true});
+      // 기본(암호화 40곳) 장소 → 시트에 행이 없으니 '수정 승인' 기록으로 남기고
+      // 앱이 approved 목록에서 읽어 해당 장소 위에 덧입힘
+      sh.getRange(row, col('status')).setValue('approved');
+      return json_({ok:true, override:true});
     }
     const info = fetchKakao_(vals[row-1][head.indexOf('link')]);
     if(info.name) sh.getRange(row, col('placeName')).setValue(info.name);

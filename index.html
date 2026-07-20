@@ -461,6 +461,21 @@ async function loadServerPlaces(pw){
       return p;
     }));
     PLACES = BASE_PLACES.filter(p=>!hidden.has(p.id)).concat(places); // 기본 40곳도 숨김 반영
+    // 승인된 수정 기록을 기본 장소 위에 덧입힘 (빈칸은 건드리지 않음, 나중 승인이 우선)
+    const edits = d.items.filter(it=>it.type==="수정" && it.editId);
+    for(const it of edits){
+      const p = PLACES.find(x=>x.id===it.editId); if(!p) continue;
+      if(CAT_BY_ID[it.category]) p.category = it.category;
+      if(it.note)  p.notes = it.note;
+      if(it.phone) p.phone = it.phone;
+      if(it.hours) p.hours = it.hours;
+      if(it.menu)  p.menu  = parseMenuText(it.menu);
+      if(Array.isArray(it.photos) && it.photos.length){
+        const ph = await Promise.all(it.photos.map(async x=>({cat: x.cat||"사진", url: await fetchPhotoDataUrl(x.id)})));
+        p.photos = ph.filter(x=>x.url);
+        if(p.photos[0]) p.photo = p.photos[0].url;
+      }
+    }
   }catch(e){ /* 서버 연결 실패해도 기본 장소는 보임 */ }
 }
 
