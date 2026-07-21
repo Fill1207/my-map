@@ -464,7 +464,8 @@ async function loadServerPlaces(pw){
     // 승인된 수정 기록을 기본 장소 위에 덧입힘 (빈칸은 건드리지 않음, 나중 승인이 우선)
     const edits = d.items.filter(it=>it.type==="수정" && it.editId);
     for(const it of edits){
-      const p = PLACES.find(x=>x.id===it.editId); if(!p) continue;
+      const idx = PLACES.findIndex(x=>x.id===it.editId); if(idx<0) continue;
+      const p = Object.assign({}, PLACES[idx]); PLACES[idx] = p; // 원본(BASE_PLACES) 오염 방지: 복제본에 덧입힘
       if(CAT_BY_ID[it.category]) p.category = it.category;
       if(it.note)  p.notes = it.note;
       if(it.phone) p.phone = it.phone;
