@@ -124,6 +124,10 @@ function doPost(e){
       sh.getRange(row, col('status')).setValue('approved');
       return json_({ok:true, override:true});
     }
+    if(type==='후기'){ // 후기: 카카오 조회 없이 그대로 공개
+      sh.getRange(row, col('status')).setValue('approved');
+      return json_({ok:true, review:true});
+    }
     const info = fetchKakao_(vals[row-1][head.indexOf('link')]);
     if(info.name) sh.getRange(row, col('placeName')).setValue(info.name);
     if(info.address) sh.getRange(row, col('address')).setValue(info.address);

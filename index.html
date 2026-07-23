@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>채맵</title>
 <meta name="robots" content="noindex, nofollow">
+<!-- PWA: 홈 화면에 추가하면 앱처럼 열림 -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#e0533c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="채맵">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>
 /* ============================================================
    디자인 토큰 — 에디토리얼. 잉크(차콜) 중심 + 산호빛 포인트 하나.
@@ -234,6 +241,54 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 .q-status.approved{background:#e6f4ea;color:#1e7d3c} .q-status.rejected{background:#fbe9e7;color:#c0392b}
 @media(prefers-color-scheme:dark){.q-status.approved{background:#16351f;color:#7ed99b}.q-status.rejected{background:#3a1f1c;color:#f0a094}}
 
+/* ---------- 도구 줄 (랜덤·가까운순·내 표시 필터) ---------- */
+.tools{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.tools::-webkit-scrollbar{display:none}
+.tool{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:99px;
+  border:1px solid var(--line);background:var(--card);font-size:13px;font-weight:600;color:var(--sub);transition:all .15s}
+.tool:active{transform:scale(.96)}
+.tool.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.tool.dice{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tool small{font-weight:500;opacity:.6;font-size:11.5px}
+
+/* ---------- 카드 위 내 표시 배지 + 하트 ---------- */
+.card{position:relative}
+.card-fav{position:absolute;top:9px;right:9px;z-index:2;width:34px;height:34px;border-radius:99px;
+  display:flex;align-items:center;justify-content:center;font-size:17px;background:rgba(255,255,255,.86);
+  box-shadow:0 1px 4px rgba(0,0,0,.18);transition:transform .1s}
+.card-fav:active{transform:scale(.85)}
+@media(prefers-color-scheme:dark){.card-fav{background:rgba(30,30,32,.82)}}
+.mine-badges{position:absolute;top:9px;left:9px;z-index:2;display:flex;gap:4px}
+.mine-badges span{font-size:11px;font-weight:700;color:#fff;background:rgba(20,20,22,.72);
+  border-radius:99px;padding:3px 8px;backdrop-filter:blur(2px)}
+.dist-tag{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--accent-ink);margin-left:6px}
+
+/* ---------- 상세: 내 표시 버튼 줄 + 길찾기 + 후기 ---------- */
+.mine-row{display:flex;gap:8px;margin:2px 0 4px}
+.mine-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0;border-radius:var(--r-btn);
+  border:1px solid var(--line);background:var(--card);font-weight:700;font-size:13.5px;color:var(--sub);transition:all .12s}
+.mine-btn:active{transform:scale(.97)}
+.mine-btn.on{border-color:var(--ink);color:var(--ink);background:var(--bg)}
+.mine-btn.fav.on{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+.nav-row{display:flex;gap:8px;margin-top:8px}
+.nav-row a{flex:1;padding:12px 0;border-radius:var(--r-btn);font-weight:700;font-size:14px;text-align:center;
+  text-decoration:none;border:1px solid var(--line);transition:transform .1s}
+.nav-row a:active{transform:scale(.98)}
+.nav-kakao{background:var(--kakao);color:var(--kakao-ink);border-color:var(--kakao)!important}
+.nav-naver{background:#03c75a;color:#fff;border-color:#03c75a!important}
+.reviews{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
+.reviews h3{font-size:14px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.rv{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.rv .rv-top{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.rv .rv-who{font-weight:700;font-size:13px}
+.rv .rv-when{font-size:11.5px;color:var(--sub);margin-left:auto}
+.rv .rv-txt{font-size:14px;white-space:pre-wrap;word-break:break-word;line-height:1.55}
+.rv-empty{font-size:13px;color:var(--sub);padding:6px 0 10px}
+.rv-write{width:100%;padding:11px 0;border-radius:var(--r-btn);background:var(--bg);border:1px dashed var(--line);
+  color:var(--ink);font-weight:700;font-size:14px}
+.share-x{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.q-badge.rev{background:#2c784d}
+
 /* ---------- 토스트 ---------- */
 #toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);
   background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;border-radius:99px;
@@ -281,6 +336,7 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
       </div>
       <input class="search" id="q" type="search" placeholder="이름, 지역, 메뉴로 검색" oninput="onSearch()">
       <div class="chips" id="chips"></div>
+      <div class="tools" id="tools"></div>
     </div>
   </header>
   <div class="wrap">
@@ -362,6 +418,27 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 <!-- 장소 상세보기 -->
 <div class="modal-bg" id="detailBg" style="display:none" onclick="if(event.target===this)closeDetail()">
   <div class="modal" id="detailBox"></div>
+</div>
+
+<!-- 후기 쓰기 -->
+<div class="modal-bg" id="reviewBg" style="display:none" onclick="if(event.target===this)closeReview()">
+  <div class="modal">
+    <button class="close-x" onclick="closeReview()" aria-label="닫기">✕</button>
+    <h2>💬 후기 남기기</h2>
+    <p class="desc" id="rvPlaceName"></p>
+    <div class="field">
+      <label>후기 <small>(필수)</small></label>
+      <textarea id="rvText" placeholder="예: 웨이팅 30분, 차돌짬뽕 강추! 주차는 넉넉해요"></textarea>
+    </div>
+    <div class="field">
+      <label>이름 <small>(선택)</small></label>
+      <input id="rvFrom" type="text" placeholder="이름 또는 별명">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-primary" id="rvSend" onclick="sendReview()">후기 보내기</button>
+    </div>
+    <p class="fineprint">관리자 승인 후 이 장소에 공개돼요. 아는 사람만 볼 수 있어요.</p>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -477,6 +554,12 @@ async function loadServerPlaces(pw){
         if(p.photos[0]) p.photo = p.photos[0].url;
       }
     }
+    // 승인된 후기를 장소별로 모음
+    REVIEWS = {};
+    for(const it of d.items.filter(x=>x.type==="후기" && x.editId && x.note)){
+      (REVIEWS[it.editId] = REVIEWS[it.editId] || []).push(
+        {who: it.from||"익명", text: it.note, when: String(it.created||"").slice(0,10)});
+    }
   }catch(e){ /* 서버 연결 실패해도 기본 장소는 보임 */ }
 }
 
@@ -492,7 +575,9 @@ function placePhotos(p){
 /* ===== 상태 ===== */
 let BASE_PLACES = []; // 암호화 데이터(40곳)
 let PLACES = [];      // 기본 + 서버 승인분
-let S = {view:"home", region:null, si:null, gu:null, cat:null, q:""};
+let REVIEWS = {};     // placeId → [{who, text, when}] (서버 승인분)
+let S = {view:"home", region:null, si:null, gu:null, cat:null, q:"", mine:null, near:false};
+let myPos = null;     // 내 위치 [lat,lng] (가까운 순 켤 때만)
 
 /* ===== 도우미 ===== */
 const $ = s=>document.querySelector(s);
@@ -506,6 +591,37 @@ function toast(msg){
   t.classList.add("show");
   clearTimeout(t._tm);
   t._tm = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+/* ===== 내 표시 (찜/가봤어요/가보고싶어요) — 이 기기에만 저장 ===== */
+const MARK_KEYS = {fav:"hm_fav", visited:"hm_visited", wish:"hm_wish"};
+const marks = {
+  load(k){ try{ return new Set(JSON.parse(store.get(MARK_KEYS[k])||"[]")); }catch(e){ return new Set(); } },
+  save(k,set){ store.set(MARK_KEYS[k], JSON.stringify([...set])); },
+  has(k,id){ return this.load(k).has(id); },
+  toggle(k,id){ const s=this.load(k); s.has(id)?s.delete(id):s.add(id);
+    if(k!=="fav"){ // 가봤어요 ↔ 가보고싶어요는 동시에 못 켬
+      const other = k==="visited"?"wish":"visited";
+      const o=this.load(other); if(o.delete(id)) this.save(other,o);
+    }
+    this.save(k,s); return s.has(id); },
+  count(k){ return this.load(k).size },
+};
+
+/* ===== 거리 계산 (하버사인, m) ===== */
+function distMeters(a,b,c,d){
+  const R=6371000, rad=x=>x*Math.PI/180;
+  const dLat=rad(c-a), dLon=rad(d-b);
+  const s=Math.sin(dLat/2)**2 + Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function distText(m){
+  if(m==null) return "";
+  return m<1000 ? Math.round(m/10)*10+"m" : (m/1000).toFixed(m<10000?1:0)+"km";
+}
+function placeDist(p){
+  if(!myPos || p.lat==null || p.lng==null) return null;
+  return distMeters(myPos[0],myPos[1], p.lat,p.lng);
 }
 
 /* ===== 잠금 해제 (복호화) ===== */
@@ -566,8 +682,18 @@ async function unlock(pw){
   $("#lock").style.display = "none";
   $("#app").hidden = false;
   render();
+  openDeepLink(); // ?place=id 로 들어왔으면 그 장소 바로 열기 (기본 40곳)
   // 서버 승인 장소를 뒤이어 합쳐서 다시 그림 (연결 실패해도 기본 40곳은 이미 보임)
-  loadServerPlaces(pw).then(()=>render());
+  loadServerPlaces(pw).then(()=>{ render(); openDeepLink(); }); // 서버 장소도 딥링크 대상
+}
+
+/* ?place=id 딥링크 — 해당 장소가 로드돼 있으면 상세를 한 번만 연다 */
+let deepLinkDone = false;
+function openDeepLink(){
+  if(deepLinkDone) return;
+  const id = new URLSearchParams(location.search).get("place");
+  if(!id) return;
+  if(PLACES.find(x=>x.id===id)){ deepLinkDone = true; openDetail(id); }
 }
 
 function showLockError(err){
@@ -614,10 +740,15 @@ function lockApp(){
 function filtered(){
   let list = PLACES.slice();
   if(S.cat) list = list.filter(p=>p.category===S.cat);
+  if(S.mine){ const set = marks.load(S.mine); list = list.filter(p=>set.has(p.id)); }
   if(S.q){
     const q = norm(S.q);
     list = list.filter(p=>norm([p.name,p.do,p.si,p.gu,p.dong,p.address,p.notes,p.category,
       ...(p.menu||[]).flat()].join(" ")).includes(q));
+  }
+  if(S.near && myPos){ // 가까운 순: 좌표 있는 곳 먼저 거리순, 좌표 없는 곳은 뒤로
+    list.sort((a,b)=>{ const da=placeDist(a), db=placeDist(b);
+      if(da==null && db==null) return 0; if(da==null) return 1; if(db==null) return -1; return da-db; });
   }
   return list;
 }
@@ -642,10 +773,14 @@ function slimPhoto(url){ return url.replace("/cthumb/local/C800x400.q50/", "/cth
 function render(noAnim){
   $("#main").classList.toggle("noanim", !!noAnim); // 검색 중에는 카드 등장 애니메이션 생략
   renderChips();
+  renderTools();
   const list = filtered();
   $("#totalPill").textContent = `${PLACES.length}곳`;
   const m = $("#main");
+  const mineLabel = {fav:"❤️ 찜한 곳",wish:"🔖 가고싶은 곳",visited:"✅ 가본 곳"};
   if(S.q) m.innerHTML = viewList(list, `"${esc(S.q)}" 검색 결과 ${list.length}곳`);
+  else if(S.mine && S.view==="home") m.innerHTML = viewList(list, `${mineLabel[S.mine]} ${list.length}곳`);
+  else if(S.near && myPos && S.view==="home") m.innerHTML = viewList(list, `📍 가까운 순 ${list.length}곳`);
   else if(S.view==="region") m.innerHTML = viewRegion(list);
   else m.innerHTML = viewHome(list);
   const qN = qPendingCount;
@@ -660,6 +795,38 @@ function renderChips(){
   for(const c of CATS)
     h += `<button class="chip ${S.cat===c.id?"on":""}" onclick="setCat('${c.id}')">${c.emoji} ${c.id} <small>${counts[c.id]||0}</small></button>`;
   $("#chips").innerHTML = h;
+}
+
+function renderTools(){
+  const fav = marks.count("fav"), vis = marks.count("visited"), wish = marks.count("wish");
+  const t = (k,cls,label,n)=>`<button class="tool ${S.mine===k?"on":""}" onclick="setMine('${k}')">${label}${n?` <small>${n}</small>`:""}</button>`;
+  $("#tools").innerHTML =
+    `<button class="tool dice" onclick="pickRandom()">🎲 랜덤추천</button>`+
+    `<button class="tool ${S.near?"on":""}" onclick="toggleNear()">📍 가까운 순</button>`+
+    t("fav","fav","❤️ 찜",fav)+
+    t("wish","wish","🔖 가고싶어요",wish)+
+    t("visited","visited","✅ 가봤어요",vis);
+}
+function setMine(k){ S.mine = (S.mine===k)?null:k; render(); }
+
+/* 🎲 지금 보이는 목록에서 하나 뽑아 상세 열기 */
+function pickRandom(){
+  const list = filtered();
+  if(!list.length){ toast("추천할 장소가 없어요. 필터를 풀어보세요"); return; }
+  const p = list[Math.floor(Math.random()*list.length)];
+  openDetail(p.id);
+}
+
+/* 📍 가까운 순: 위치 한 번 받아서 정렬 */
+function toggleNear(){
+  if(S.near){ S.near=false; render(); return; }
+  if(!navigator.geolocation){ toast("이 브라우저는 위치를 지원하지 않아요"); return; }
+  toast("내 위치 확인 중…");
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ myPos=[pos.coords.latitude,pos.coords.longitude]; S.near=true;
+      render(); scrollTo(0,0); toast("가까운 순으로 정렬했어요"); },
+    err=>{ toast(err.code===1?"위치 권한을 허용해 주세요":"위치를 못 가져왔어요"); },
+    {enableHighAccuracy:false, timeout:8000, maximumAge:300000});
 }
 
 function viewHome(list){
@@ -754,9 +921,17 @@ function card(p){
     ? `<img class="photo" src="${esc(slimPhoto(ph.url))}" alt="${esc(p.name)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph-placeholder ph-${c.cls}&quot;>${c.emoji}</div>'">`
     : `<div class="ph-placeholder ph-${c.cls}">${c.emoji}</div>`;
   const hier = [p.do,p.si,p.gu,p.dong].filter(Boolean).join(" · ");
-  return `<div class="card" data-detail="${esc(p.id)}">${photo}<div class="cbody">
+  const fav = marks.has("fav",p.id);
+  const badges = [marks.has("visited",p.id)?`<span>✅ 가봤어요</span>`:"",
+                  marks.has("wish",p.id)?`<span>🔖 가고싶어요</span>`:""].join("");
+  const d = placeDist(p);
+  const dtag = d!=null ? `<span class="dist-tag">📍 ${distText(d)}</span>` : "";
+  return `<div class="card" data-detail="${esc(p.id)}">
+    <button class="card-fav" data-fav="${esc(p.id)}" aria-label="찜">${fav?"❤️":"🤍"}</button>
+    ${badges?`<div class="mine-badges">${badges}</div>`:""}
+    ${photo}<div class="cbody">
     <span class="cat-tag t-${c.cls}">${c.emoji} ${esc(p.category)}</span>
-    <div class="cname">${esc(p.name)}</div>
+    <div class="cname">${esc(p.name)}${dtag}</div>
     <div class="chier">${esc(hier)}</div>
     <div class="caddr"><span>🧭</span><span>${esc(p.address||"주소 정보 없음")}</span></div>
     <div class="card-more">눌러서 상세보기 ›</div>
@@ -778,12 +953,21 @@ function onSearch(){ // 한글 조합 중 잦은 재렌더를 막는 디바운�
 /* 동적 값(시/구 이름, 주소)은 onclick 문자열 대신 data 속성 + 위임으로 처리
    — 따옴표가 든 이름도 안전 */
 $("#main").addEventListener("click", e=>{
+  const favBtn = e.target.closest("[data-fav]");
+  if(favBtn){ e.stopPropagation(); toggleFav(favBtn.dataset.fav, favBtn); return; }
   const t = e.target.closest("[data-detail],[data-si],[data-gu]");
   if(!t) return;
   if(t.dataset.detail !== undefined) openDetail(t.dataset.detail);
   else if(t.dataset.si !== undefined) setSi(t.dataset.si);
   else if(t.dataset.gu !== undefined) setGu(t.dataset.gu);
 });
+/* 하트 토글 — 목록 전체를 다시 그리지 않고 그 버튼만 갱신 (스크롤 유지) */
+function toggleFav(id, btn){
+  const on = marks.toggle("fav", id);
+  if(btn) btn.textContent = on?"❤️":"🤍";
+  renderTools(); // 찜 개수 갱신
+  toast(on?"찜했어요 ❤️":"찜을 해제했어요");
+}
 
 async function copyText(text, doneMsg){
   try{
@@ -834,6 +1018,46 @@ function closeReg(){ $("#regBg").style.display = "none"; }
 
 /* ===== 장소 상세보기 ===== */
 let detailPlace = null;
+
+/* 길찾기 URL — 좌표 있으면 실제 경로안내, 없으면 검색 */
+function kakaoRouteUrl(p){
+  if(p.lat!=null && p.lng!=null) return `https://map.kakao.com/link/to/${encodeURIComponent(p.name)},${p.lat},${p.lng}`;
+  return kakaoUrl(p);
+}
+function naverUrl(p){
+  const q = `${p.si||""} ${p.gu||""} ${p.name}`.trim();
+  return "https://map.naver.com/p/search/" + encodeURIComponent(q);
+}
+
+/* 내 표시 버튼 줄 (찜/가봤어요/가고싶어요) */
+function mineRow(p){
+  const b=(k,cls,onLabel,offLabel)=>{ const on=marks.has(k,p.id);
+    return `<button class="mine-btn ${cls} ${on?"on":""}" onclick="detailMark('${k}')">${on?onLabel:offLabel}</button>`; };
+  return `<div class="mine-row">
+    ${b("fav","fav","❤️ 찜함","🤍 찜")}
+    ${b("wish","wish","🔖 가고싶어요","🔖 가고싶어요")}
+    ${b("visited","visited","✅ 가봤어요","✅ 가봤어요")}
+  </div>`;
+}
+function detailMark(k){
+  if(!detailPlace) return;
+  marks.toggle(k, detailPlace.id);
+  openDetail(detailPlace.id); // 상세 다시 그려 버튼 상태 반영
+  render(); // 목록/도구 개수도 갱신
+}
+
+/* 후기 목록 HTML */
+function reviewsHtml(p){
+  const list = REVIEWS[p.id] || [];
+  const items = list.length
+    ? list.map(r=>`<div class="rv"><div class="rv-top"><span class="rv-who">${esc(r.who||"익명")}</span>
+        <span class="rv-when">${esc(r.when||"")}</span></div><div class="rv-txt">${esc(r.text)}</div></div>`).join("")
+    : `<div class="rv-empty">아직 후기가 없어요. 첫 후기를 남겨보세요!</div>`;
+  return `<div class="reviews"><h3>💬 후기 <span style="color:var(--sub);font-weight:600">${list.length}</span></h3>
+    ${items}
+    <button class="rv-write" onclick="openReview()">✍️ 후기 쓰기</button></div>`;
+}
+
 function openDetail(id){
   const p = PLACES.find(x=>x.id===id); if(!p) return;
   detailPlace = p;
@@ -844,22 +1068,30 @@ function openDetail(id){
     : `<div class="detail-photos"><div class="noimg ph-${c.cls}">${c.emoji}</div></div>`;
   const hier = [p.do,p.si,p.gu,p.dong].filter(Boolean).join(" · ");
   const menuTxt = (p.menu&&p.menu.length) ? p.menu.map(m=>m[1]?`${m[0]}  ·  ${m[1]}`:m[0]).join("\n") : "";
-  const rows = [["지역",hier],["주소",p.address],["전화",p.phone],["영업시간",p.hours],["메뉴",menuTxt],["한마디",p.notes]];
+  const d = placeDist(p);
+  const distRow = d!=null ? [["거리","여기서 약 "+distText(d)]] : [];
+  const rows = [["지역",hier],["주소",p.address],...distRow,["전화",p.phone],["영업시간",p.hours],["메뉴",menuTxt],["한마디",p.notes]];
   $("#detailBox").innerHTML = `
     <button class="close-x" onclick="closeDetail()" aria-label="닫기">✕</button>
     ${gallery}
     <span class="cat-tag t-${c.cls}">${c.emoji} ${esc(p.category)}</span>
     <div class="detail-title">${esc(p.name)}</div>
     ${p.added?`<div class="detail-sub">등록 ${esc(p.added)}${p.from?` · ${esc(p.from)}`:""}</div>`:""}
+    ${mineRow(p)}
     <div>`+rows.map(([k,v])=>{
       const has = v && String(v).trim();
       return `<div class="drow"><span class="dk">${k}</span><span class="dv ${has?"":"none"}">${has?esc(v):"없음"}</span></div>`;
     }).join("")+`</div>
-    <div class="modal-btns" style="margin-top:16px">
-      <a class="go-kakao" href="${esc(kakaoUrl(p))}" target="_blank" rel="noopener">카카오맵에서 보기</a>
+    <div class="nav-row">
+      <a class="nav-kakao" href="${esc(kakaoRouteUrl(p))}" target="_blank" rel="noopener">🗺️ 카카오 길찾기</a>
+      <a class="nav-naver" href="${esc(naverUrl(p))}" target="_blank" rel="noopener">🟢 네이버 지도</a>
+    </div>
+    <div class="modal-btns" style="margin-top:8px">
       <button class="btn-ghost" onclick="copyDetailAddr()">주소 복사</button>
+      <button class="btn-ghost share-x" onclick="sharePlace()">🔗 공유</button>
       <button class="btn-ghost" onclick="editFromDetail()">수정</button>
     </div>
+    ${reviewsHtml(p)}
     <div class="detail-del">
       ${getAdminKey()
         ? `<button onclick="adminDeletePlace()">🗑️ 삭제 (관리자)</button>`
@@ -870,6 +1102,37 @@ function openDetail(id){
 function closeDetail(){ $("#detailBg").style.display = "none"; }
 function copyDetailAddr(){ if(detailPlace) copyText(detailPlace.address||detailPlace.name, "주소를 복사했어요"); }
 function editFromDetail(){ if(detailPlace){ const id = detailPlace.id; closeDetail(); openReg(id); } }
+
+/* 🔗 이 장소만 바로 열리는 링크 공유 */
+async function sharePlace(){
+  if(!detailPlace) return;
+  const url = location.origin + location.pathname + "?place=" + encodeURIComponent(detailPlace.id);
+  const shareData = {title:"채맵 · "+detailPlace.name, text:`${detailPlace.name} — 채맵에서 보기`, url};
+  if(navigator.share){ try{ await navigator.share(shareData); return; }catch(e){ if(e.name==="AbortError") return; } }
+  copyText(url, "링크를 복사했어요. 붙여넣어 보내세요");
+}
+
+/* ===== 후기 ===== */
+let reviewPlace = null;
+function openReview(){
+  reviewPlace = detailPlace; if(!reviewPlace) return;
+  $("#rvPlaceName").textContent = reviewPlace.name;
+  $("#rvText").value = ""; $("#rvFrom").value = "";
+  $("#reviewBg").style.display = "flex";
+}
+function closeReview(){ $("#reviewBg").style.display = "none"; }
+async function sendReview(){
+  if(!reviewPlace) return;
+  const text = $("#rvText").value.trim();
+  if(!text){ toast("후기를 입력해 주세요"); return; }
+  const btn = $("#rvSend"); btn.disabled = true; btn.textContent = "보내는 중…";
+  try{
+    await serverPost({action:"submit", pw: store.get("hm_pw")||"", type:"후기",
+      editId: reviewPlace.id, name: reviewPlace.name, note: text, from: $("#rvFrom").value.trim()});
+    closeReview(); toast("후기 보냈어요! 관리자 승인 후 공개돼요");
+  }catch(e){ toast("전송 실패, 다시 시도해 주세요"); }
+  btn.disabled = false; btn.textContent = "후기 보내기";
+}
 
 /* 누구나: 삭제 요청 → 승인 대기함에 쌓임 */
 async function requestDelete(){
@@ -1046,6 +1309,7 @@ function renderQueue(){
     const nm = x.placeName || x.name || "(이름 미상 · 링크에서 확인)";
     const badge = x.type==="삭제요청" ? `<span class="q-badge del">삭제요청</span>`
                 : x.type==="수정" ? `<span class="q-badge edit">수정</span>`
+                : x.type==="후기" ? `<span class="q-badge rev">후기</span>`
                 : `<span class="q-badge reg">등록</span>`;
     const st = x.status!=="pending" ? `<span class="q-status ${x.status}">${x.status==="approved"?"승인됨":"거절됨"}</span>` : "";
     const safe = safeUrl(x.link);
@@ -1055,6 +1319,8 @@ function renderQueue(){
     const hasPhoto = photos.length ? `${photos.length}장` : "";
     const meta = x.type==="삭제요청"
       ? `<div class="q-line">이 장소를 지도에서 삭제하는 요청이에요${x.from?` · ${esc(x.from)}`:""}</div>`
+      : x.type==="후기"
+      ? `<div class="q-line">후기 · 승인하면 "${esc(x.name||"")}" 장소에 공개돼요${x.from?` · ${esc(x.from)}`:""}</div>`
       : `<div class="q-line">${esc(x.category||"?")}${x.from?` · ${esc(x.from)}`:""}${hasPhoto?` · 📷 ${hasPhoto}`:""}</div>`;
     const okLabel = x.type==="삭제요청" ? "삭제 승인" : "승인";
     const acts = x.status==="pending"
@@ -1062,6 +1328,11 @@ function renderQueue(){
       : `<div class="q-acts"><button class="q-no" onclick="qAction('${esc(x.id)}','delete')">삭제</button></div>`;
     return `<div class="q-item"><div class="q-top">${badge}<span class="q-name">${esc(nm)}</span>${st}</div>${link}${note}${meta}${acts}</div>`;
   }).join("");
+}
+
+/* ===== PWA: 서비스워커 등록 (홈 화면 추가 · 오프라인 캐시) ===== */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
 </script>
 </body>
