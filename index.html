@@ -19,33 +19,38 @@
    카드는 잔선(border)+아주 옅은 그림자. 모서리: 카드 16 / 버튼 11.
    ============================================================ */
 :root{
-  /* 아기자기 · 따뜻한 크림 + 코랄 브랜드색. 둥근 모양, 말랑한 그림자, 톡 튀는 모션 */
-  --bg:#fdf7ef; --card:#ffffff; --ink:#2b2621; --sub:#8a8073; --line:#f0e6d8;
-  --accent:#e8583c; --accent-ink:#c1402a; --accent-soft:#fdeae2;
-  /* 버튼·칩 채움용 (흰 글자 AA 4.5:1 통과하는 진한 코랄) */
-  --accent-btn:#cc4328; --on-accent:#fff;
-  --map:#f3ebdd; --map-line:#e6dac6; --map-on:#fbd9cc; --map-label:#4a4038;
+  /* 에디토리얼 · 사진 중심 매거진. 종이색 + 먹색, 색은 사진이 담당. 절제된 크롬. */
+  --bg:#f3f1ea; --card:#fffdf8; --ink:#1b1917; --sub:#847c70; --line:#e6e1d5;
+  --accent:#b5432e; --accent-ink:#a63a27; --accent-soft:#f5e7e1; /* 아주 드물게 (마스트헤드 선, 활성 밑줄) */
+  --accent-btn:#1b1917; --on-accent:#faf8f2; /* 주요 버튼 = 먹색(에디토리얼) */
+  --map:#e7e2d6; --map-line:#d8d2c2; --map-on:#e0cbb0; --map-label:#3a352e;
   --kakao:#fee500; --kakao-ink:#191600;
-  --danger:#cf4326;
-  /* 카테고리색(흰 글자 AA 통과) + 옅은 반투명(자리표시·아이콘 배경, 두 테마 공용) */
+  --danger:#b23a2e;
+  /* 카테고리색(흰 글자 AA 통과) + 옅은 반투명 */
   --c-date:#bd3f66; --c-trip:#2c784d; --c-food:#b5531d; --c-cafe:#856043; --c-fish:#356cb5; --c-church:#7052ad;
-  --c-date-soft:rgba(189,63,102,.15); --c-trip-soft:rgba(44,120,77,.15); --c-food-soft:rgba(181,83,29,.15);
-  --c-cafe-soft:rgba(133,96,67,.15); --c-fish-soft:rgba(53,108,181,.15); --c-church-soft:rgba(112,82,173,.15);
-  --shadow:0 2px 5px rgba(120,80,40,.05), 0 14px 30px -12px rgba(120,80,40,.16);
-  /* 둥근 정도 한 벌: 카드 20 · 버튼/칩 알약 · 입력 15 · 작은요소 13 */
-  --r-card:20px; --r-btn:999px; --r-chip:999px; --r-input:15px; --r-sm:13px;
-  /* 톡 튀는 스프링 (아기자기 모션) */
-  --spring:cubic-bezier(.34,1.45,.5,1);
+  --c-date-soft:rgba(189,63,102,.14); --c-trip-soft:rgba(44,120,77,.14); --c-food-soft:rgba(181,83,29,.14);
+  --c-cafe-soft:rgba(133,96,67,.14); --c-fish-soft:rgba(53,108,181,.14); --c-church-soft:rgba(112,82,173,.14);
+  /* 사진 없는 곳의 타이포 표지 그라데이션 (무드 있게, 흰 글자 잘 보이게) */
+  --cover-date:linear-gradient(150deg,#a86b7e,#5f3446);
+  --cover-trip:linear-gradient(150deg,#6f8b6a,#37503f);
+  --cover-food:linear-gradient(150deg,#b1734a,#6e3c20);
+  --cover-cafe:linear-gradient(150deg,#9a8368,#544031);
+  --cover-fish:linear-gradient(150deg,#5f7f96,#324a5a);
+  --cover-church:linear-gradient(150deg,#8a6f9e,#4c3a63);
+  --shadow:0 1px 2px rgba(30,25,15,.04), 0 12px 30px -14px rgba(30,25,15,.16);
+  /* 부드럽고 절제된 곡률 */
+  --r-card:14px; --r-btn:11px; --r-chip:999px; --r-input:11px; --r-sm:10px;
+  --spring:cubic-bezier(.22,1,.36,1);
 }
 @media (prefers-color-scheme: dark){
   :root{
-    /* 아늑한 웜 다크 (차갑지 않게) */
-    --bg:#17120d; --card:#221b15; --ink:#f1e9dd; --sub:#a89c8b; --line:#332a21;
-    --accent:#f4715a; --accent-ink:#f78d78; --accent-soft:#3a221a;
-    --accent-btn:#f4715a; --on-accent:#17120d;
-    --map:#261f18; --map-line:#3b3128; --map-on:#4d2c22; --map-label:#cabfad;
-    --danger:#f26b4f;
-    --shadow:0 2px 6px rgba(0,0,0,.45), 0 16px 34px -14px rgba(0,0,0,.62);
+    /* 밤의 매거진 — 깊은 잉크, 종이 대신 먹지 */
+    --bg:#131210; --card:#1c1a16; --ink:#efe9dd; --sub:#9a9284; --line:#2c281f;
+    --accent:#e07a63; --accent-ink:#e79079; --accent-soft:#33221c;
+    --accent-btn:#efe9dd; --on-accent:#131210;
+    --map:#252017; --map-line:#372f22; --map-on:#4a3a26; --map-label:#c9c0ae;
+    --danger:#e2705a;
+    --shadow:0 2px 6px rgba(0,0,0,.5), 0 16px 34px -16px rgba(0,0,0,.66);
   }
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -63,7 +68,7 @@ a{color:inherit}
 .lock-card{width:100%;max-width:340px;text-align:center}
 .lock-emblem{width:76px;height:76px;border-radius:26px;background:var(--accent-btn);color:var(--on-accent);
   display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 22px;
-  box-shadow:0 10px 24px -8px var(--accent);animation:emblemPop .5s var(--spring) both}
+  animation:emblemPop .5s var(--spring) both}
 @keyframes emblemPop{from{transform:scale(.7) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
 .lock-card h1{font-size:26px;letter-spacing:-.03em;font-weight:800;margin-bottom:8px}
 .lock-card p{font-size:14px;color:var(--sub);margin-bottom:26px;line-height:1.6}
@@ -73,7 +78,7 @@ a{color:inherit}
 .lock-form input:focus{border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)}
 #pwInput{-webkit-text-security:disc} /* 한글 입력 가능한 text 필드를 ●로 가림 */
 .lock-form button{padding:15px 0;border-radius:var(--r-btn);background:var(--accent-btn);color:var(--on-accent);
-  font-weight:800;font-size:16px;transition:transform .18s var(--spring), opacity .15s;box-shadow:0 6px 16px -6px var(--accent)}
+  font-weight:800;font-size:16px;transition:transform .18s var(--spring), opacity .15s}
 .lock-form button:active{transform:scale(.94)}
 .lock-form button:disabled{opacity:.5}
 .lock-err{font-size:13px;color:var(--danger);min-height:20px;margin-top:8px}
@@ -91,14 +96,13 @@ header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px s
 .title-row{display:flex;align-items:center;gap:8px}
 .brand{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
 .brand .mark{width:32px;height:32px;border-radius:12px;background:var(--accent-btn);color:var(--on-accent);
-  display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 4px 10px -3px var(--accent)}
+  display:flex;align-items:center;justify-content:center;font-size:17px}
 .brand:active .mark{transform:scale(.9) rotate(-6deg);transition:transform .2s var(--spring)}
 .brand b{font-size:19px;letter-spacing:-.03em;font-weight:800}
 .count-pill{font-size:12px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);
   border:none;border-radius:99px;padding:3px 10px}
-.suggest-btn{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:800;
-  background:var(--accent-btn);color:var(--on-accent);border-radius:99px;padding:9px 16px;transition:transform .18s var(--spring);
-  box-shadow:0 5px 14px -5px var(--accent)}
+.suggest-btn{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;
+  background:var(--accent-btn);color:var(--on-accent);border-radius:99px;padding:9px 16px;transition:transform .18s var(--spring)}
 .suggest-btn:active{transform:scale(.92)}
 .search{width:100%;padding:12px 16px;border:1px solid var(--line);border-radius:var(--r-btn);
   background:var(--card);font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s}
@@ -111,12 +115,21 @@ header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px s
   transition:transform .18s var(--spring), background .15s, color .15s, border-color .15s}
 .chip:active{transform:scale(.93)}
 .chip small{font-weight:600;opacity:.6;font-size:11.5px}
-.chip.on{background:var(--accent-btn);color:var(--on-accent);border-color:var(--accent);box-shadow:0 4px 12px -4px var(--accent)}
+.chip.on{background:var(--accent-btn);color:var(--on-accent);border-color:var(--accent-btn)}
 .chip.on small{opacity:.8}
 
 /* ---------- 지도 홈 ---------- */
+/* 홈 피드 (매거진) */
+.home-bar{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.map-toggle{font-size:13px;font-weight:700;color:var(--sub);border:1px solid var(--line);
+  background:var(--card);border-radius:99px;padding:8px 15px;transition:transform .15s var(--spring)}
+.map-toggle:active{transform:scale(.95)}
+.map-toggle.on{color:var(--on-accent);background:var(--accent-btn);border-color:var(--accent-btn)}
+.feed-h{display:flex;align-items:baseline;gap:9px;margin:34px 2px 0;border-bottom:1.5px solid var(--ink);padding-bottom:9px}
+.feed-h h2{font-size:21px;font-weight:800;letter-spacing:-.03em}
+.feed-h span{font-size:12px;color:var(--sub);font-weight:600;margin-left:auto}
 .map-card{background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);box-shadow:var(--shadow);
-  margin-top:16px;padding:18px 12px 6px}
+  margin-top:14px;padding:18px 12px 6px}
 svg.korea{width:100%;height:auto;display:block;max-height:70dvh}
 .region path{fill:var(--map);stroke:var(--map-line);stroke-width:1;transition:fill .15s}
 .region{cursor:pointer}
@@ -160,32 +173,37 @@ svg.korea{width:100%;height:auto;display:block;max-height:70dvh}
 /* ---------- 장소 카드 ---------- */
 .groups h3{margin:26px 2px 2px;font-size:15px;font-weight:800;letter-spacing:-.02em}
 .groups h4{margin:14px 2px 0;font-size:12.5px;color:var(--sub);font-weight:600}
-.card{background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);box-shadow:var(--shadow);
-  overflow:hidden;margin-top:12px;animation:rise .4s var(--spring) both;cursor:pointer;
-  transition:transform .18s var(--spring),border-color .15s,box-shadow .2s}
-.card:active{transform:scale(.97)}
-@media(hover:hover){.card:hover{border-color:var(--accent);box-shadow:0 4px 8px rgba(120,80,40,.06),0 18px 34px -14px rgba(232,88,60,.28);transform:translateY(-2px)}}
+/* 매거진 카드 = 표지 하나 */
+.card{position:relative;border-radius:var(--r-card);overflow:hidden;margin-top:14px;cursor:pointer;
+  background:var(--card);box-shadow:var(--shadow);animation:rise .5s var(--spring) both;
+  transition:transform .3s var(--spring),box-shadow .3s}
+.card:active{transform:scale(.985)}
+@media(hover:hover){.card:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(30,25,15,.05),0 24px 44px -18px rgba(30,25,15,.34)}}
 #main.noanim .card{animation:none}
-.card-more{margin-top:11px;font-size:12.5px;font-weight:800;color:var(--accent-ink)}
-@keyframes rise{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion: reduce){.card{animation:none}.shake{animation:none}}
-.photo{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--map)}
-.photo2{aspect-ratio:16/9;border-top:2px solid var(--card)} /* 음식 사진 (선택) */
-.ph-placeholder{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:40px}
-/* 사진 없을 때 자리표시 — 카테고리색 옅은 단색(반투명이라 다크/라이트 모두 자연스러움) */
-.ph-date{background:var(--c-date-soft)}.ph-trip{background:var(--c-trip-soft)}.ph-food{background:var(--c-food-soft)}
-.ph-cafe{background:var(--c-cafe-soft)}.ph-fish{background:var(--c-fish-soft)}.ph-church{background:var(--c-church-soft)}
-.cbody{padding:15px 17px 16px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.card,.card:hover{animation:none;transform:none}.shake{animation:none}}
+/* 표지: 사진 있으면 사진, 없으면 카테고리 그라데이션에 이름을 크게 (타이포 표지) */
+.cover{position:relative;aspect-ratio:4/3;background-size:cover;background-position:center;
+  display:flex;flex-direction:column;justify-content:flex-end;isolation:isolate}
+.cover-date{background:var(--cover-date)}.cover-trip{background:var(--cover-trip)}.cover-food{background:var(--cover-food)}
+.cover-cafe{background:var(--cover-cafe)}.cover-fish{background:var(--cover-fish)}.cover-church{background:var(--cover-church)}
+.cover::after{content:"";position:absolute;inset:0;z-index:0;
+  background:linear-gradient(to top,rgba(14,11,7,.85) 0%,rgba(14,11,7,.32) 40%,rgba(14,11,7,0) 68%)}
+.cover.hasimg::after{background:linear-gradient(to top,rgba(14,11,7,.8) 0%,rgba(14,11,7,.16) 46%,rgba(14,11,7,0) 72%)}
+.cover-cap{position:relative;z-index:1;padding:17px 18px 18px;color:#fff}
+.cover-cat{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;opacity:.92;display:block;margin-bottom:8px}
+.cover-name{font-size:25px;font-weight:800;letter-spacing:-.02em;line-height:1.12;text-shadow:0 1px 14px rgba(0,0,0,.35)}
+.cover-sub{font-size:12.5px;opacity:.9;margin-top:7px;letter-spacing:-.01em;line-height:1.45}
+.cover-sub .star{color:#ffcf5a}
+/* 상세보기·자리표시에서 쓰는 카테고리 태그 (유지) */
 .cat-tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;border-radius:99px;
   padding:3px 9px 3px 7px;margin-bottom:9px;color:#fff;letter-spacing:-.01em}
-/* 카테고리색: 흰 글자가 AA(4.5:1) 넘도록 date/food/trip을 진하게. 색 바꿀 땐 :root의 --c-*도 함께 */
 .t-date{background:var(--c-date)}.t-trip{background:var(--c-trip)}.t-food{background:var(--c-food)}
 .t-cafe{background:var(--c-cafe)}.t-fish{background:var(--c-fish)}.t-church{background:var(--c-church)}
 .ic-date{background:var(--c-date-soft)}.ic-trip{background:var(--c-trip-soft)}.ic-food{background:var(--c-food-soft)}
 .ic-cafe{background:var(--c-cafe-soft)}.ic-fish{background:var(--c-fish-soft)}.ic-church{background:var(--c-church-soft)}
-.cname{font-size:18px;font-weight:800;letter-spacing:-.03em}
-.chier{font-size:12px;color:var(--sub);margin-top:3px;letter-spacing:-.01em}
-.caddr{display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--sub);margin-top:10px}
+.ph-date{background:var(--c-date-soft)}.ph-trip{background:var(--c-trip-soft)}.ph-food{background:var(--c-food-soft)}
+.ph-cafe{background:var(--c-cafe-soft)}.ph-fish{background:var(--c-fish-soft)}.ph-church{background:var(--c-church-soft)}
 .go-kakao{background:var(--kakao);color:var(--kakao-ink)}
 .empty{text-align:center;color:var(--sub);padding:52px 20px;font-size:14.5px;line-height:1.7}
 .empty .big{font-size:52px;display:block;margin-bottom:12px;animation:floaty 3s ease-in-out infinite}
@@ -224,7 +242,14 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 .photo-row .rm{flex:0 0 auto;width:32px;height:32px;border-radius:8px;background:var(--bg);border:1px solid var(--line);color:var(--danger);font-size:16px}
 .add-photo{width:100%;padding:11px 0;border-radius:var(--r-btn);background:var(--bg);border:1px dashed var(--line);color:var(--ink);font-weight:700;font-size:14px}
 /* 상세보기 */
-.detail-photos{display:flex;gap:8px;overflow-x:auto;margin:0 -4px 4px;padding:0 4px 4px;scrollbar-width:none}
+/* 상세 매거진 히어로 (모달 위쪽을 꽉 채우는 표지) */
+.detail-hero{margin:-24px -22px 16px;border-radius:26px 26px 0 0;aspect-ratio:16/11;min-height:190px}
+.detail-hero .cover-cap{padding:20px 22px 22px}
+.detail-hero .cover-name{font-size:28px}
+.detail-hero .close-x.on-cover{position:absolute;top:12px;right:12px;z-index:3;float:none;color:#fff;
+  background:rgba(0,0,0,.4);width:34px;height:34px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0;
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.detail-photos{display:flex;gap:8px;overflow-x:auto;margin:0 -4px 12px;padding:0 4px 4px;scrollbar-width:none}
 .detail-photos::-webkit-scrollbar{display:none}
 .detail-photos figure{flex:0 0 auto;margin:0}
 .detail-photos img{height:180px;border-radius:12px;display:block;object-fit:cover}
@@ -243,7 +268,7 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 .modal-btns button,.modal-btns a{flex:1;padding:13px 0;border-radius:var(--r-btn);font-weight:800;font-size:15px;
   text-align:center;text-decoration:none;transition:transform .18s var(--spring)}
 .modal-btns button:active,.modal-btns a:active{transform:scale(.94)}
-.btn-primary{background:var(--accent-btn);color:var(--on-accent);box-shadow:0 5px 14px -5px var(--accent)}
+.btn-primary{background:var(--accent-btn);color:var(--on-accent)}
 .btn-ghost{background:var(--card);border:1px solid var(--line);color:var(--ink)}
 .modal .fineprint{font-size:12px;color:var(--sub);margin-top:14px;line-height:1.6}
 .modal .close-x{position:sticky;float:right;top:0;font-size:20px;color:var(--sub);padding:2px 6px}
@@ -276,8 +301,8 @@ footer button{color:var(--sub);font-size:12px;text-decoration:underline;text-und
 .tool:active{transform:scale(.96)}
 .tool{transition:transform .18s var(--spring), background .15s, color .15s, border-color .15s}
 .tool:active{transform:scale(.93)}
-.tool.on{background:var(--accent-btn);color:var(--on-accent);border-color:var(--accent);box-shadow:0 4px 12px -4px var(--accent)}
-.tool.dice{background:var(--accent-btn);color:var(--on-accent);border-color:var(--accent);box-shadow:0 4px 12px -4px var(--accent)}
+.tool.on{background:var(--accent-btn);color:var(--on-accent);border-color:var(--accent-btn)}
+.tool.dice{background:transparent;color:var(--ink);border-color:var(--ink)}
 .tool small{font-weight:500;opacity:.6;font-size:11.5px}
 
 /* ---------- 카드 위 내 표시 배지 + 하트 ---------- */
@@ -639,7 +664,7 @@ function placePhotos(p){
 let BASE_PLACES = []; // 암호화 데이터(40곳)
 let PLACES = [];      // 기본 + 서버 승인분
 let REVIEWS = {};     // placeId → [{who, text, when}] (서버 승인분)
-let S = {view:"home", region:null, si:null, gu:null, cat:null, q:"", mine:null, near:false, pins:false};
+let S = {view:"home", region:null, si:null, gu:null, cat:null, q:"", mine:null, near:false, pins:false, showMap:false};
 let myPos = null;     // 내 위치 [lat,lng] (가까운 순 켤 때만)
 
 /* ===== 도우미 ===== */
@@ -920,7 +945,7 @@ function renderTools(){
     (nNo?t("nophoto","📷 사진 필요",nNo):"");
 }
 function setMine(k){ S.mine = (S.mine===k)?null:k; render(); scrollTo(0,0); }
-function togglePins(){ S.pins = !S.pins; render(); }
+function togglePins(){ S.pins = !S.pins; if(S.pins) S.showMap = true; render(); }
 
 /* 위치를 한 번 받아 캐시하고 콜백 실행. cb(hadPos, err) — 이미 있으면 즉시 true */
 function ensurePos(cb){
@@ -989,7 +1014,8 @@ function mapPins(list){
   return s + `</g>`;
 }
 
-function viewHome(list){
+/* 대한민국 지도 (기본은 접힘, 🗺️ 지도로 펼침) */
+function mapCard(list){
   const byRegion = {};
   for(const p of list) byRegion[p.do]=(byRegion[p.do]||0)+1;
   let svg = `<svg class="korea" viewBox="${KOREA_MAP.viewBox}" xmlns="http://www.w3.org/2000/svg">`;
@@ -999,7 +1025,6 @@ function viewHome(list){
     for(const code of r.codes) svg += `<path d="${KOREA_MAP.provinces[code].d}"/>`;
     svg += `</g>`;
   }
-  // 지역 이름 라벨은 항상, 개수 배지는 핀 모드가 아닐 때만
   for(const r of REGIONS){
     const n = byRegion[r.name]||0;
     const [x,y] = r.label;
@@ -1012,17 +1037,30 @@ function viewHome(list){
   }
   if(S.pins) svg += mapPins(list);
   svg += `</svg>`;
-  let sums = `<div class="sumgrid">`;
-  for(const c of CATS){
-    const n = PLACES.filter(p=>p.category===c.id).length;
-    sums += `<div class="sumcard" onclick="setCat('${c.id}')">
-      <div class="ic ic-${c.cls}">${c.emoji}</div>
-      <b>${n}</b><span>${c.id}</span></div>`;
-  }
-  sums += `</div>`;
-  const hint = S.pins ? "핀을 누르면 그곳이 바로 열려요" : "지역을 누르면 그곳의 장소가 나와요";
-  return `<div class="map-card">${svg}<div class="map-hint">${hint}${S.cat?` · 지금 <b>${esc(S.cat)}</b>만 보는 중`:""}</div></div>${sums}`;
+  const hint = S.pins ? "핀을 누르면 그곳이 바로 열려요" : "지역을 누르면 그곳만 모아 봐요";
+  return `<div class="map-card">${svg}<div class="map-hint">${hint}</div></div>`;
 }
+
+/* 홈 = 사진 피드 (도별 섹션). 지도는 접어두고 필요할 때 펼침 */
+function viewHome(list){
+  let h = `<div class="home-bar">
+    <button class="map-toggle ${S.showMap?"on":""}" onclick="toggleMap()">🗺️ 지도</button>
+    ${S.pins?`<button class="map-toggle on" onclick="togglePins()">📌 핀 켜짐</button>`:""}
+  </div>`;
+  if(S.showMap) h += mapCard(list);
+  const byDo = {};
+  for(const p of list) (byDo[p.do]=byDo[p.do]||[]).push(p);
+  const order = REGIONS.map(r=>r.name).filter(n=>byDo[n]);
+  if(!order.length) return h + `<div class="empty"><span class="big">🗺️</span>아직 기록된 장소가 없어요.<br>오른쪽 위 <b>장소 등록</b>으로 첫 장소를 올려보세요!</div>`;
+  h += `<div class="feed">`;
+  for(const name of order){
+    const short = (REGIONS.find(r=>r.name===name)||{}).short || name;
+    h += `<div class="feed-h"><h2>${esc(short)}</h2><span>${byDo[name].length}곳</span></div>`;
+    h += byDo[name].map(card).join("");
+  }
+  return h + `</div>`;
+}
+function toggleMap(){ S.showMap = !S.showMap; if(!S.showMap) S.pins=false; render(); }
 
 function viewRegion(list){
   const region = REGIONS.find(r=>r.name===S.region);
@@ -1077,31 +1115,40 @@ function viewList(list, heading, grouped){
   return h;
 }
 
+/* 같은 카테고리라도 표지 색이 조금씩 다르게 (id로 흔들되 같은 색 계열 유지) */
+function coverStyle(id){
+  let h=0; for(let i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))>>>0;
+  const hue=(h%30)-15;                    // 색조 ±15° (계열 유지, 초록/보라로 안 튐)
+  const br=90+(Math.floor(h/30)%18);      // 밝기 90~107%
+  const sat=88+(Math.floor(h/900)%30);    // 채도 88~117%
+  return `filter:hue-rotate(${hue}deg) brightness(${br}%) saturate(${sat}%)`;
+}
 function card(p){
   const c = CAT_BY_ID[p.category]||{emoji:"📍",cls:"date"};
   const ph = placePhotos(p)[0];
-  const photo = ph
-    ? `<img class="photo" src="${esc(slimPhoto(ph.url))}" alt="${esc(p.name)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph-placeholder ph-${c.cls}&quot;>${c.emoji}</div>'">`
-    : `<div class="ph-placeholder ph-${c.cls}">${c.emoji}</div>`;
-  const hier = [p.do,p.si,p.gu,p.dong].filter(Boolean).join(" · ");
+  const hasImg = !!ph;
+  const bg = hasImg ? `background-image:url('${esc(slimPhoto(ph.url))}')` : coverStyle(p.id);
   const fav = marks.has("fav",p.id);
-  const badges = [newIds.has(p.id)?`<span class="nw">🆕 NEW</span>`:"",
+  const badges = [newIds.has(p.id)?`<span class="nw">NEW</span>`:"",
                   marks.has("visited",p.id)?`<span>✅ 가봤어요</span>`:"",
                   marks.has("wish",p.id)?`<span>🔖 가고싶어요</span>`:""].join("");
+  const hier = [p.si,p.gu||p.dong].filter(Boolean).join(" · ");
   const d = placeDist(p);
-  const dtag = d!=null ? `<span class="dist-tag">📍 ${distText(d)}</span>` : "";
   const rt = placeRating(p.id);
-  const rtag = rt ? `<span class="rate-tag">★ ${rt.toFixed(1)} <span class="n">(${(REVIEWS[p.id]||[]).filter(r=>r.rating).length})</span></span>` : "";
-  return `<div class="card" data-detail="${esc(p.id)}">
-    <button class="card-fav" data-fav="${esc(p.id)}" aria-label="찜">${fav?"❤️":"🤍"}</button>
-    ${badges?`<div class="mine-badges">${badges}</div>`:""}
-    ${photo}<div class="cbody">
-    <span class="cat-tag t-${c.cls}">${c.emoji} ${esc(p.category)}</span>
-    <div class="cname">${esc(p.name)}${rtag}${dtag}</div>
-    <div class="chier">${esc(hier)}</div>
-    <div class="caddr"><span>🧭</span><span>${esc(p.address||"주소 정보 없음")}</span></div>
-    <div class="card-more">눌러서 상세보기 ›</div>
-  </div></div>`;
+  const sub = [hier,
+    rt?`<span class="star">★</span> ${rt.toFixed(1)}`:"",
+    d!=null?distText(d):""].filter(Boolean).join("&nbsp;&nbsp;·&nbsp;&nbsp;");
+  return `<article class="card" data-detail="${esc(p.id)}">
+    <div class="cover cover-${c.cls}${hasImg?" hasimg":""}" style="${bg}">
+      <button class="card-fav" data-fav="${esc(p.id)}" aria-label="찜">${fav?"❤️":"🤍"}</button>
+      ${badges?`<div class="mine-badges">${badges}</div>`:""}
+      <div class="cover-cap">
+        <span class="cover-cat">${c.emoji} ${esc(p.category)}</span>
+        <div class="cover-name">${esc(p.name)}</div>
+        <div class="cover-sub">${sub}</div>
+      </div>
+    </div>
+  </article>`;
 }
 
 /* ===== 동작 ===== */
@@ -1254,20 +1301,28 @@ function openDetail(id){
   detailPlace = p;
   const c = CAT_BY_ID[p.category]||{emoji:"📍",cls:"date"};
   const photos = placePhotos(p);
-  const gallery = photos.length
-    ? `<div class="detail-photos">`+photos.map(ph=>`<figure><img src="${esc(ph.url)}" alt=""><figcaption>${esc(ph.cat||"사진")}</figcaption></figure>`).join("")+`</div>`
-    : `<div class="detail-photos"><div class="noimg ph-${c.cls}">${c.emoji}</div></div>`;
-  const hier = [p.do,p.si,p.gu,p.dong].filter(Boolean).join(" · ");
-  const menuTxt = (p.menu&&p.menu.length) ? p.menu.map(m=>m[1]?`${m[0]}  ·  ${m[1]}`:m[0]).join("\n") : "";
+  const heroBg = photos.length ? `background-image:url('${esc(photos[0].url)}')` : coverStyle(p.id);
+  const rt = placeRating(p.id);
+  const hierShort = [p.si,p.gu,p.dong].filter(Boolean).join(" · ");
   const d = placeDist(p);
-  const distRow = d!=null ? [["거리","여기서 약 "+distText(d)]] : [];
-  const rows = [["지역",hier],["주소",p.address],...distRow,["전화",p.phone],["영업시간",p.hours],["메뉴",menuTxt],["한마디",p.notes]];
+  const heroSub = [hierShort, rt?`<span class="star">★</span> ${rt.toFixed(1)}`:"", d!=null?distText(d):""]
+    .filter(Boolean).join("&nbsp;&nbsp;·&nbsp;&nbsp;");
+  const extra = photos.length>1
+    ? `<div class="detail-photos">`+photos.slice(1).map(ph=>`<figure><img src="${esc(ph.url)}" alt=""><figcaption>${esc(ph.cat||"사진")}</figcaption></figure>`).join("")+`</div>`
+    : "";
+  const menuTxt = (p.menu&&p.menu.length) ? p.menu.map(m=>m[1]?`${m[0]}  ·  ${m[1]}`:m[0]).join("\n") : "";
+  const region = [p.do,p.si,p.gu,p.dong].filter(Boolean).join(" · ");
+  const rows = [["지역",region],["주소",p.address],["전화",p.phone],["영업시간",p.hours],["메뉴",menuTxt],["한마디",p.notes]];
   $("#detailBox").innerHTML = `
-    <button class="close-x" onclick="closeDetail()" aria-label="닫기">✕</button>
-    ${gallery}
-    <span class="cat-tag t-${c.cls}">${c.emoji} ${esc(p.category)}</span>
-    <div class="detail-title">${esc(p.name)}${placeRating(p.id)?`<span class="rate-tag" style="font-size:16px">★ ${placeRating(p.id).toFixed(1)}</span>`:""}</div>
-    ${p.added?`<div class="detail-sub">등록 ${esc(p.added)}${p.from?` · ${esc(p.from)}`:""}${newIds.has(p.id)?` · <b style="color:var(--accent-ink)">🆕 새로 생김</b>`:""}</div>`:""}
+    <div class="detail-hero cover cover-${c.cls}${photos.length?" hasimg":""}" style="${heroBg}">
+      <button class="close-x on-cover" onclick="closeDetail()" aria-label="닫기">✕</button>
+      <div class="cover-cap">
+        <span class="cover-cat">${c.emoji} ${esc(p.category)}${newIds.has(p.id)?" · NEW":""}${p.added?` · 등록 ${esc(p.added)}`:""}</span>
+        <div class="cover-name">${esc(p.name)}</div>
+        ${heroSub?`<div class="cover-sub">${heroSub}</div>`:""}
+      </div>
+    </div>
+    ${extra}
     ${!hasPhoto(p)?`<button class="photo-need" onclick="addPhotoFromDetail()">📷 내가 찍은 사진 올리기</button>`:""}
     ${mineRow(p)}
     ${visitLogHtml(p)}

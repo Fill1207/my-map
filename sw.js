@@ -1,6 +1,6 @@
 /* 채맵 서비스워커 — 가볍게. 네트워크 우선(온라인이면 항상 최신), 실패 시 캐시(오프라인 대비).
    서버(script.google.com)·지오코딩·카카오 등 외부 요청은 건드리지 않고 그대로 네트워크로 보냄. */
-const CACHE = "chaemap-v1";
+const CACHE = "chaemap-v2";
 const SHELL = ["./", "index.html", "koreamap.js", "places.enc.js",
   "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
