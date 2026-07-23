@@ -809,24 +809,53 @@ function renderTools(){
 }
 function setMine(k){ S.mine = (S.mine===k)?null:k; render(); }
 
-/* 🎲 지금 보이는 목록에서 하나 뽑아 상세 열기 */
+/* 위치를 한 번 받아 캐시하고 콜백 실행. cb(hadPos, err) — 이미 있으면 즉시 true */
+function ensurePos(cb){
+  if(myPos){ cb(true); return; }
+  if(!navigator.geolocation){ cb(false); return; }
+  toast("내 위치 확인 중…");
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ myPos=[pos.coords.latitude,pos.coords.longitude]; cb(true); },
+    err=>{ cb(false, err); },
+    {enableHighAccuracy:false, timeout:8000, maximumAge:300000});
+}
+
+/* 🎲 내 위치 근처에서 하나 뽑아 상세 열기 (지역/검색/내표시로 좁힌 상태면 그 안에서) */
 function pickRandom(){
-  const list = filtered();
-  if(!list.length){ toast("추천할 장소가 없어요. 필터를 풀어보세요"); return; }
-  const p = list[Math.floor(Math.random()*list.length)];
-  openDetail(p.id);
+  let pool = filtered();
+  if(S.view==="region" && S.region && !S.q){ // 특정 지역 보는 중이면 그 범위로
+    pool = pool.filter(p=>p.do===S.region && (!S.si||p.si===S.si) && (!S.gu||p.gu===S.gu));
+  }
+  if(!pool.length){ toast("추천할 장소가 없어요. 필터를 풀어보세요"); return; }
+  const open = list => openDetail(list[Math.floor(Math.random()*list.length)].id);
+
+  // 이미 지역/검색/내표시로 좁혀봤으면 위치 없이 그 안에서
+  if((S.view==="region"&&S.region) || S.q || S.mine){ open(pool); return; }
+
+  // 홈(전국)에선 내 위치 근처에서 — 성남에 있으면 제주 안 나오게
+  ensurePos(hadPos=>{
+    if(hadPos){
+      const withD = pool.map(p=>({p,d:placeDist(p)})).filter(x=>x.d!=null).sort((a,b)=>a.d-b.d);
+      if(withD.length){
+        let cand = withD.filter(x=>x.d<=20000);     // 20km 이내 우선
+        if(cand.length<3) cand = withD.slice(0,8);   // 너무 적으면 가까운 8곳
+        toast("가까운 곳에서 골랐어요 📍");
+        open(cand.map(x=>x.p)); return;
+      }
+    }
+    toast(hadPos?"주변에 좌표 있는 곳이 없어 전체에서 골랐어요":"위치 없이 전체에서 골랐어요");
+    open(pool);
+  });
 }
 
 /* 📍 가까운 순: 위치 한 번 받아서 정렬 */
 function toggleNear(){
   if(S.near){ S.near=false; render(); return; }
-  if(!navigator.geolocation){ toast("이 브라우저는 위치를 지원하지 않아요"); return; }
-  toast("내 위치 확인 중…");
-  navigator.geolocation.getCurrentPosition(
-    pos=>{ myPos=[pos.coords.latitude,pos.coords.longitude]; S.near=true;
-      render(); scrollTo(0,0); toast("가까운 순으로 정렬했어요"); },
-    err=>{ toast(err.code===1?"위치 권한을 허용해 주세요":"위치를 못 가져왔어요"); },
-    {enableHighAccuracy:false, timeout:8000, maximumAge:300000});
+  ensurePos((hadPos, err)=>{
+    if(!hadPos){ toast(!navigator.geolocation ? "이 브라우저는 위치를 지원하지 않아요"
+      : err && err.code===1 ? "위치 권한을 허용해 주세요" : "위치를 못 가져왔어요"); return; }
+    S.near=true; render(); scrollTo(0,0); toast("가까운 순으로 정렬했어요");
+  });
 }
 
 function viewHome(list){
